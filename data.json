@@ -45,7 +45,7 @@
     "due_day": 10,
     "late_fee": 0,
     "created_at": "2026-05-11T15:43:10.572Z",
-    "receipt_seq": 1,
+    "receipt_seq": 2,
     "passphrase_hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
   },
   "flats": [
@@ -8750,7 +8750,27 @@
       "updated_at": "2026-05-11T15:43:29.936Z"
     }
   ],
-  "payments": [],
+  "payments": [
+    {
+      "id": "68cpinhugfo1",
+      "flat_no": "D106",
+      "periods": [
+        "2026-04",
+        "2026-05",
+        "2026-06",
+        "2026-07",
+        "2026-08",
+        "2026-09"
+      ],
+      "amount": 19824,
+      "per_period_amount": 3304,
+      "paid_on": "2026-05-11",
+      "mode": "UPI",
+      "receipt_no": "0233",
+      "notes": "",
+      "recorded_at": "2026-05-11T16:11:56.113Z"
+    }
+  ],
   "expenses": [
     {
       "id": "gm9pr9icb8w3",
@@ -8797,6 +8817,6 @@
   "auth": {
     "passphrase_hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
   },
-  "updated_at": "2026-05-11T16:11:33.441Z",
+  "updated_at": "2026-05-11T16:11:58.627Z",
   "device": "Windows NT 10.0; Win64; x64"
 }
