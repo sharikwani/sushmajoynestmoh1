@@ -8751,7 +8751,22 @@
     }
   ],
   "payments": [],
-  "expenses": [],
+  "expenses": [
+    {
+      "id": "gm9pr9icb8w3",
+      "date": "2026-05-11",
+      "category": "Staff Salary",
+      "subcategory": "Security Guard",
+      "staff_id": "o5k8o3h6atbu",
+      "payee_name": "ravinder",
+      "amount": 11250,
+      "mode": "UPI",
+      "reference_no": "125tesstred125",
+      "notes": "",
+      "period": "2026-05",
+      "recorded_at": "2026-05-11T16:07:54.051Z"
+    }
+  ],
   "staff": [
     {
       "id": "o5k8o3h6atbu",
@@ -8768,6 +8783,6 @@
   "auth": {
     "passphrase_hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
   },
-  "updated_at": "2026-05-11T16:07:36.401Z",
+  "updated_at": "2026-05-11T16:07:56.568Z",
   "device": "Windows NT 10.0; Win64; x64"
 }
