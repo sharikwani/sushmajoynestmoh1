@@ -11,11 +11,11 @@ tailwind.config = {
     extend: {
       fontFamily: {
         display: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
-        sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+        sans: ['Inter', '"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', '"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       colors: {
-        ink: { DEFAULT: '#1A1F2E', soft: '#3B4252', muted: '#6B7280' },
+        ink: { DEFAULT: '#0F1419', soft: '#1F2937', muted: '#4B5563' },
         ivory: { DEFAULT: '#FAF7F2', deep: '#F2EDE3', warm: '#FFFDF8' },
         teal: { 50: '#E6F0F0', 100: '#CCE1E1', 500: '#0A4D4D', 600: '#083D3D', 700: '#062E2E', 900: '#031818' },
         clay: { 500: '#C2410C', 600: '#9A340A' },
@@ -32,23 +32,24 @@ tailwind.config = {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
-  html, body { background: #FAF7F2; color: #1A1F2E; }
-  body { font-family: 'IBM Plex Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; font-feature-settings: 'tnum' 1, 'cv11' 1; }
-  .font-display { font-family: 'Fraunces', Georgia, serif; font-optical-sizing: auto; }
-  .font-mono { font-family: 'IBM Plex Mono', monospace; }
+  html, body { background: #FAF7F2; color: #0F1419; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; font-feature-settings: 'tnum' 1, 'cv02' 1, 'cv03' 1, 'cv04' 1, 'cv11' 1; font-size: 15px; line-height: 1.55; }
+  .font-display { font-family: 'Fraunces', Georgia, serif; font-optical-sizing: auto; letter-spacing: -0.015em; font-weight: 600; }
+  .font-mono { font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace; }
   .tabular { font-variant-numeric: tabular-nums; }
   .grain { background-image: radial-gradient(rgba(10,77,77,0.04) 1px, transparent 1px); background-size: 18px 18px; }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: #F2EDE3; }
-  ::-webkit-scrollbar-thumb { background: #0A4D4D33; border-radius: 8px; }
-  ::-webkit-scrollbar-thumb:hover { background: #0A4D4D66; }
-  input, select, textarea { font-family: inherit; }
+  ::-webkit-scrollbar-thumb { background: #0A4D4D55; border-radius: 8px; }
+  ::-webkit-scrollbar-thumb:hover { background: #0A4D4D88; }
+  input, select, textarea { font-family: inherit; font-size: 14px; color: #0F1419; }
+  input::placeholder, textarea::placeholder { color: #6B7280; opacity: 1; }
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .divide-soft > * + * { border-top: 1px solid rgba(10,77,77,0.08); }
-  .ring-soft { box-shadow: inset 0 0 0 1px rgba(10,77,77,0.10); }
-  .ring-soft-strong { box-shadow: inset 0 0 0 1px rgba(10,77,77,0.18); }
+  .divide-soft > * + * { border-top: 1px solid rgba(10,77,77,0.10); }
+  .ring-soft { box-shadow: inset 0 0 0 1px rgba(10,77,77,0.16); }
+  .ring-soft-strong { box-shadow: inset 0 0 0 1px rgba(10,77,77,0.24); }
   details > summary { list-style: none; cursor: pointer; }
   details > summary::-webkit-details-marker { display: none; }
   @keyframes slideUp { from { transform: translateY(8px); opacity: 0;} to { transform: translateY(0); opacity: 1; } }
@@ -64,15 +65,30 @@ tailwind.config = {
   }
   .print-only { display: none; }
   @media print { .print-only { display: block; } }
+  /* labels — much more legible */
+  .field-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #1F2937; }
+  /* readable hints (was barely visible before) */
+  .hint { font-size: 12px; color: #4B5563; }
   /* status chips */
-  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; letter-spacing: 0.02em; }
-  .chip-paid { background: #DCFCE7; color: #166534; }
-  .chip-due { background: #FEE2E2; color: #991B1B; }
-  .chip-partial { background: #FEF3C7; color: #92400E; }
-  .chip-vacant { background: #E5E7EB; color: #374151; }
-  .chip-info { background: #E0F2F1; color: #064E4E; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: 0.01em; }
+  .chip-paid { background: #BBF7D0; color: #14532D; }
+  .chip-due { background: #FECACA; color: #7F1D1D; }
+  .chip-partial { background: #FEF3C7; color: #78350F; }
+  .chip-vacant { background: #E5E7EB; color: #1F2937; }
+  .chip-info { background: #D1E7E7; color: #053838; }
+  .chip-danger { background: #FECACA; color: #7F1D1D; }
+  /* defaulter severity */
+  .sev-1 { background: #FEF3C7; color: #78350F; border: 1px solid #FCD34D; }
+  .sev-2 { background: #FED7AA; color: #7C2D12; border: 1px solid #FB923C; }
+  .sev-3 { background: #FECACA; color: #7F1D1D; border: 1px solid #F87171; }
+  .sev-4 { background: #B91C1C; color: #FFFFFF; border: 1px solid #991B1B; font-weight: 700; }
   /* dot */
   .dot { display: inline-block; width: 6px; height: 6px; border-radius: 999px; margin-right: 6px; }
+  /* tables — more readable */
+  table th { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #1F2937; text-transform: uppercase; }
+  table td { font-size: 14px; color: #0F1419; }
+  .text-ink-muted { color: #4B5563 !important; }
+  .text-ink-soft { color: #1F2937 !important; }
 </style>
 </head>
 <body>
@@ -112,6 +128,37 @@ const DEFAULT_RATES = {
 };
 
 const PAYMENT_MODES = ['UPI', 'Bank Transfer', 'Cash', 'Cheque', 'Card', 'Other'];
+
+const EXPENSE_CATEGORIES = [
+  { id: 'salary', label: 'Staff Salary', color: 'teal' },
+  { id: 'security', label: 'Security & Guards', color: 'teal' },
+  { id: 'housekeeping', label: 'Housekeeping & Cleaning', color: 'teal' },
+  { id: 'gardening', label: 'Gardening & Landscape', color: 'moss' },
+  { id: 'plumbing', label: 'Plumbing', color: 'clay' },
+  { id: 'electrical', label: 'Electrical & Lighting', color: 'amber' },
+  { id: 'repairs', label: 'Repairs & Maintenance', color: 'clay' },
+  { id: 'renovation', label: 'Renovation & Painting', color: 'clay' },
+  { id: 'utilities', label: 'Utilities (Water/Power)', color: 'teal' },
+  { id: 'lift', label: 'Lift / Elevator AMC', color: 'clay' },
+  { id: 'generator', label: 'Generator / DG Set', color: 'clay' },
+  { id: 'pestcontrol', label: 'Pest Control', color: 'moss' },
+  { id: 'stationery', label: 'Stationery & Printing', color: 'ink' },
+  { id: 'meeting', label: 'Meetings & Refreshments', color: 'ink' },
+  { id: 'legal', label: 'Legal & Audit', color: 'ink' },
+  { id: 'bank', label: 'Bank Charges', color: 'ink' },
+  { id: 'event', label: 'Events / Festivals', color: 'moss' },
+  { id: 'cctv', label: 'CCTV / Security Equipment', color: 'teal' },
+  { id: 'fire', label: 'Fire Safety', color: 'crimson' },
+  { id: 'tax', label: 'Taxes & Govt Fees', color: 'ink' },
+  { id: 'other', label: 'Other / Miscellaneous', color: 'ink' },
+];
+const EXPENSE_CAT_MAP = Object.fromEntries(EXPENSE_CATEGORIES.map(c => [c.id, c]));
+
+const STAFF_ROLES = [
+  'Security Guard', 'Gardener', 'Plumber', 'Electrician',
+  'Cleaning Staff', 'Maid / Housekeeping', 'Manager / Supervisor',
+  'Lift Operator', 'Driver', 'Carpenter', 'Painter', 'Other',
+];
 
 /* ----- formatting helpers ----- */
 const inr = (n) => '₹' + (Number(n) || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
@@ -264,193 +311,137 @@ const storage = {
 const K_FLATS = 'sjm1:flats:v1';
 const K_PAYMENTS = 'sjm1:payments:v1';
 const K_CONFIG = 'sjm1:config:v1';
+const K_EXPENSES = 'sjm1:expenses:v1';
+const K_STAFF = 'sjm1:staff:v1';
 
-/* ----- Google Drive sync -----
-   Sync the three JSON files (flats, payments, config) to a folder on the
-   treasurer's Google Drive. Requires:
-     (a) the HTML hosted on a real HTTP(S) origin — file:// origins are rejected by Google OAuth
-     (b) a one-time OAuth Client ID from console.cloud.google.com (Web app type) with
-         the page's origin added to "Authorized JavaScript origins"
+/* ----- GitHub storage ----- 
+   Stores all data as a single data.json file in a GitHub repo.
+   Requires a Personal Access Token (fine-grained, "Contents: Read and write" on the repo).
+   Setup:
+     - User repo: https://github.com/{owner}/{repo}
+     - File path: data.json (or anything)
+     - Branch: main (default)
 */
-const DRIVE_FOLDER_NAME = 'Sushma Joynest Moh 1 - Maintenance';
-const DRIVE_FILES = { flats: 'flats.json', payments: 'payments.json', config: 'config.json' };
-const K_DRIVE_CLIENT_ID = 'sjm1:drive:clientId';
-const K_DRIVE_FILE_IDS  = 'sjm1:drive:fileIds';
-const K_DRIVE_FOLDER_ID = 'sjm1:drive:folderId';
-const K_DRIVE_USER      = 'sjm1:drive:user';
-const K_DRIVE_DISMISSED = 'sjm1:drive:onboardDismissed';
-const K_DRIVE_LAST_SYNC = 'sjm1:drive:lastSync';
+const K_GH_CONFIG = 'sjm1:gh:config:v1';
+const K_GH_SHA = 'sjm1:gh:sha:v1';        // last known SHA of the data file (for optimistic concurrency)
+const K_GH_LAST_SYNC = 'sjm1:gh:lastSync';
+const K_AUTH_SESSION = 'sjm1:auth:session';
 
-const drive = {
-  clientId: null,
-  accessToken: null,
-  tokenExpiry: 0,
-  tokenClient: null,
-  user: null,
+const github = {
+  config: { token: null, owner: null, repo: null, branch: 'main', path: 'data.json' },
   init() {
-    this.clientId = localStorage.getItem(K_DRIVE_CLIENT_ID);
-    try { this.user = JSON.parse(localStorage.getItem(K_DRIVE_USER) || 'null'); } catch (e) {}
-  },
-  isFileOrigin() { return location.protocol === 'file:'; },
-  isConfigured() { return !!this.clientId; },
-  isConnected() { return !!this.accessToken && Date.now() < this.tokenExpiry; },
-  saveClientId(id) { this.clientId = id; localStorage.setItem(K_DRIVE_CLIENT_ID, id); },
-  forget() {
-    this.clientId = null; this.accessToken = null; this.user = null; this.tokenExpiry = 0;
-    [K_DRIVE_CLIENT_ID, K_DRIVE_FILE_IDS, K_DRIVE_FOLDER_ID, K_DRIVE_USER, K_DRIVE_LAST_SYNC]
-      .forEach(k => localStorage.removeItem(k));
-  },
-  async loadGIS() {
-    if (window.google && window.google.accounts && window.google.accounts.oauth2) return;
-    await new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'https://accounts.google.com/gsi/client';
-      s.async = true; s.defer = true;
-      s.onload = resolve;
-      s.onerror = () => reject(new Error('Failed to load Google Identity Services. Are you offline?'));
-      document.head.appendChild(s);
-    });
-  },
-  async connect({ promptUser = true } = {}) {
-    if (this.isFileOrigin()) throw new Error('Google Drive sync requires the app to be hosted on a web server. Opening this file directly (file://) is not supported by Google OAuth.');
-    if (!this.clientId) throw new Error('No OAuth Client ID configured. Use the setup wizard to add one.');
-    await this.loadGIS();
-    return new Promise((resolve, reject) => {
-      this.tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: this.clientId,
-        scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-        callback: async (response) => {
-          if (response.error) { reject(new Error(response.error_description || response.error)); return; }
-          this.accessToken = response.access_token;
-          this.tokenExpiry = Date.now() + ((response.expires_in || 3600) * 1000) - 60000;
-          try {
-            const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${this.accessToken}` } });
-            if (r.ok) { this.user = await r.json(); localStorage.setItem(K_DRIVE_USER, JSON.stringify(this.user)); }
-          } catch (e) {}
-          resolve(this.user);
-        },
-        error_callback: (err) => reject(new Error(err.type || 'OAuth failed')),
-      });
-      this.tokenClient.requestAccessToken({ prompt: promptUser ? 'consent' : '' });
-    });
-  },
-  disconnect() {
-    if (this.accessToken && window.google && window.google.accounts && window.google.accounts.oauth2) {
-      try { google.accounts.oauth2.revoke(this.accessToken); } catch (e) {}
-    }
-    this.accessToken = null; this.tokenExpiry = 0; this.user = null;
-    [K_DRIVE_USER, K_DRIVE_FILE_IDS, K_DRIVE_FOLDER_ID].forEach(k => localStorage.removeItem(k));
-  },
-  async ensureToken() {
-    if (this.isConnected()) return this.accessToken;
-    if (!this.clientId) throw new Error('Drive not configured');
-    await this.connect({ promptUser: false });
-    return this.accessToken;
-  },
-  async _fetch(url, opts = {}, retried = false) {
-    const token = await this.ensureToken();
-    const res = await fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: `Bearer ${token}` } });
-    if (res.status === 401 && !retried) {
-      this.accessToken = null; this.tokenExpiry = 0;
-      return this._fetch(url, opts, true);
-    }
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`Drive ${res.status}: ${text.slice(0, 200)}`);
-    }
-    return res;
-  },
-  async findOrCreateFolder() {
-    let folderId = localStorage.getItem(K_DRIVE_FOLDER_ID);
-    if (folderId) {
-      // verify it still exists
-      try {
-        await this._fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,trashed`);
-        return folderId;
-      } catch (e) { localStorage.removeItem(K_DRIVE_FOLDER_ID); folderId = null; }
-    }
-    const q = `name='${DRIVE_FOLDER_NAME.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-    const res = await this._fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)&spaces=drive`);
-    const data = await res.json();
-    if (data.files && data.files.length) {
-      folderId = data.files[0].id;
-    } else {
-      const r = await this._fetch('https://www.googleapis.com/drive/v3/files?fields=id', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: DRIVE_FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' }),
-      });
-      folderId = (await r.json()).id;
-    }
-    localStorage.setItem(K_DRIVE_FOLDER_ID, folderId);
-    return folderId;
-  },
-  _fileIds() { try { return JSON.parse(localStorage.getItem(K_DRIVE_FILE_IDS) || '{}'); } catch (e) { return {}; } },
-  _setFileIds(ids) { localStorage.setItem(K_DRIVE_FILE_IDS, JSON.stringify(ids)); },
-  async _findFile(folderId, name) {
-    const q = `name='${name}' and '${folderId}' in parents and trashed=false`;
-    const res = await this._fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,modifiedTime)`);
-    const data = await res.json();
-    return data.files && data.files[0];
-  },
-  async readFile(key) {
-    const name = DRIVE_FILES[key];
-    if (!name) return null;
-    const folderId = await this.findOrCreateFolder();
-    const ids = this._fileIds();
-    let fileId = ids[key];
-    if (!fileId) {
-      const f = await this._findFile(folderId, name);
-      if (!f) return null;
-      fileId = f.id;
-      ids[key] = fileId; this._setFileIds(ids);
-    }
     try {
-      const res = await this._fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
-      return await res.text();
-    } catch (e) {
-      delete ids[key]; this._setFileIds(ids);
-      return null;
-    }
+      const saved = localStorage.getItem(K_GH_CONFIG);
+      if (saved) this.config = { ...this.config, ...JSON.parse(saved) };
+    } catch (e) {}
   },
-  async writeFile(key, content) {
-    const name = DRIVE_FILES[key];
-    if (!name) throw new Error('Unknown key ' + key);
-    const folderId = await this.findOrCreateFolder();
-    const ids = this._fileIds();
-    let fileId = ids[key];
-    if (!fileId) {
-      const existing = await this._findFile(folderId, name);
-      if (existing) { fileId = existing.id; ids[key] = fileId; this._setFileIds(ids); }
+  isConfigured() { return !!(this.config.token && this.config.owner && this.config.repo); },
+  saveConfig(cfg) {
+    this.config = { ...this.config, ...cfg };
+    localStorage.setItem(K_GH_CONFIG, JSON.stringify(this.config));
+  },
+  forget() {
+    this.config = { token: null, owner: null, repo: null, branch: 'main', path: 'data.json' };
+    [K_GH_CONFIG, K_GH_SHA, K_GH_LAST_SYNC].forEach(k => localStorage.removeItem(k));
+  },
+  _getSha() { return localStorage.getItem(K_GH_SHA); },
+  _setSha(sha) { localStorage.setItem(K_GH_SHA, sha); },
+  apiBase() { return `https://api.github.com/repos/${this.config.owner}/${this.config.repo}`; },
+  _headers(extra = {}) {
+    return {
+      Authorization: `Bearer ${this.config.token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      ...extra,
+    };
+  },
+  async testConnection() {
+    // GET the repo info to validate token + owner + repo
+    const r = await fetch(this.apiBase(), { headers: this._headers() });
+    if (!r.ok) {
+      const body = await r.text();
+      if (r.status === 401) throw new Error('Invalid token, or token does not have access to this repo.');
+      if (r.status === 404) throw new Error('Repo not found, or token does not have Contents permission.');
+      throw new Error(`GitHub ${r.status}: ${body.slice(0, 160)}`);
     }
-    if (fileId) {
-      await this._fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: content,
+    return await r.json();
+  },
+  async getCurrentUser() {
+    const r = await fetch('https://api.github.com/user', { headers: this._headers() });
+    if (!r.ok) return null;
+    return await r.json();
+  },
+  async getFile() {
+    const url = `${this.apiBase()}/contents/${encodeURIComponent(this.config.path)}?ref=${encodeURIComponent(this.config.branch)}`;
+    const r = await fetch(url, { headers: this._headers() });
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.text()).slice(0, 160)}`);
+    const data = await r.json();
+    // content is base64 with line breaks
+    const b64 = data.content.replace(/\s/g, '');
+    const text = decodeURIComponent(escape(atob(b64)));
+    this._setSha(data.sha);
+    return { text, sha: data.sha };
+  },
+  async putFile(jsonText, message = null) {
+    // Try update; if it fails with 409/422 conflict, refresh sha and retry once
+    const tryPut = async () => {
+      const url = `${this.apiBase()}/contents/${encodeURIComponent(this.config.path)}`;
+      const sha = this._getSha();
+      const body = {
+        message: message || `Update data ${new Date().toISOString()}`,
+        content: btoa(unescape(encodeURIComponent(jsonText))),
+        branch: this.config.branch,
+      };
+      if (sha) body.sha = sha;
+      const r = await fetch(url, {
+        method: 'PUT',
+        headers: this._headers({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(body),
       });
-    } else {
-      const boundary = '-------sjm1bound314159';
-      const meta = { name, parents: [folderId], mimeType: 'application/json' };
-      const body =
-        `--${boundary}\r\n` +
-        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-        JSON.stringify(meta) + '\r\n' +
-        `--${boundary}\r\n` +
-        'Content-Type: application/json\r\n\r\n' +
-        content + '\r\n' +
-        `--${boundary}--`;
-      const r = await this._fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
-        method: 'POST',
-        headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
-        body,
-      });
-      ids[key] = (await r.json()).id;
-      this._setFileIds(ids);
+      return r;
+    };
+    let r = await tryPut();
+    if (r.status === 409 || r.status === 422) {
+      // SHA mismatch — pull latest, then retry
+      await this.getFile();
+      r = await tryPut();
     }
+    if (!r.ok) {
+      const body = await r.text();
+      throw new Error(`GitHub ${r.status}: ${body.slice(0, 200)}`);
+    }
+    const data = await r.json();
+    if (data.content && data.content.sha) this._setSha(data.content.sha);
+    return data;
   },
 };
-drive.init();
+github.init();
+
+/* ----- Crypto helpers for auth ----- */
+async function sha256Hex(str) {
+  const buf = new TextEncoder().encode(str);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+const auth = {
+  isLocked: false,
+  storedHash: null,
+  setStoredHash(h) { this.storedHash = h; },
+  // session: 24h
+  hasValidSession() {
+    try {
+      const s = JSON.parse(localStorage.getItem(K_AUTH_SESSION) || 'null');
+      if (!s || !s.expiresAt) return false;
+      if (Date.now() > s.expiresAt) { localStorage.removeItem(K_AUTH_SESSION); return false; }
+      return true;
+    } catch (e) { return false; }
+  },
+  startSession() {
+    localStorage.setItem(K_AUTH_SESSION, JSON.stringify({ expiresAt: Date.now() + 24*3600*1000 }));
+  },
+  endSession() { localStorage.removeItem(K_AUTH_SESSION); },
+};
 
 /* ----- flat generation ----- */
 function generateFlats() {
@@ -591,6 +582,12 @@ const Icon = ({ name, className='w-4 h-4', stroke=1.75 }) => {
     cloud: <path d="M17.5 19a4.5 4.5 0 0 0 .91-8.88A6 6 0 0 0 6.83 10 4.5 4.5 0 0 0 7 19h10.5Z"/>,
     refresh: <><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></>,
     link: <><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></>,
+    lock: <><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></>,
+    share: <><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98"/><path d="M15.41 6.51l-6.82 3.98"/></>,
+    whatsapp: <path d="M16.6 14c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.7.8-.8.9-.1.2-.3.2-.5.1-.7-.3-1.4-.7-2-1.2-.5-.5-1-1.1-1.4-1.7-.1-.2 0-.4.1-.5.1-.1.2-.3.4-.4l.3-.4c.1-.1.1-.3 0-.4-.1-.1-.6-1.3-.8-1.8-.1-.7-.3-.7-.5-.7h-.5c-.2 0-.5.2-.6.3-.6.6-.9 1.3-.9 2.1.1.9.4 1.8 1 2.6 1.1 1.6 2.5 2.9 4.2 3.7.5.2.9.4 1.4.5.5.2 1 .2 1.6.1.7-.1 1.3-.6 1.7-1.2.2-.4.2-.8.1-1.2l-.4-.2m2.5-9.1C15.2 1 8.9 1 5 4.9c-3.2 3.2-3.8 8.1-1.6 12L2 22l5.3-1.4c1.5.8 3.1 1.2 4.7 1.2 5.5 0 9.9-4.4 9.9-9.9.1-2.6-1-5.1-2.8-7m-2.7 14c-1.3.8-2.8 1.3-4.4 1.3-1.5 0-2.9-.4-4.2-1.1l-.3-.2-3.1.8.8-3-.2-.3c-2.4-4-1.2-9 2.7-11.4 3.9-2.4 9-1.2 11.4 2.6 2.4 3.9 1.3 9-2.6 11.5l-.1-.2"/>,
+    users: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+    wallet: <><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M14 14h4"/><path d="M2 10h20"/></>,
+    calendar: <><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></>,
   };
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
@@ -615,7 +612,7 @@ const Button = ({ variant='primary', size='md', className='', children, ...rest 
 
 const Field = ({ label, hint, children, className='' }) => (
   <label className={`block ${className}`}>
-    {label && <span className="block text-[11px] font-medium uppercase tracking-wider text-ink-muted mb-1.5">{label}</span>}
+    {label && <span className="field-label block mb-1.5">{label}</span>}
     {children}
     {hint && <span className="block text-[11px] text-ink-muted mt-1">{hint}</span>}
   </label>
@@ -744,46 +741,55 @@ function Onboarding({ onInitialize }) {
    SIDEBAR
    =========================================================== */
 
-function Sidebar({ view, setView, society, defaulterCount, currentPeriod, driveStatus, driveLastSync, onDriveBadgeClick }) {
+function Sidebar({ view, setView, society, defaulterCount, currentPeriod, driveStatus, driveLastSync, onDriveBadgeClick, onLogout, hasPw }) {
   const items = [
     { id: 'dashboard', label: 'Dashboard', icon: 'home' },
     { id: 'flats', label: 'Flats & Owners', icon: 'building' },
     { id: 'record', label: 'Record Payment', icon: 'plus' },
     { id: 'history', label: 'Payment History', icon: 'list' },
     { id: 'defaulters', label: 'Defaulters', icon: 'alert', badge: defaulterCount },
+    { id: 'expenses', label: 'Expenses', icon: 'rupee' },
+    { id: 'staff', label: 'Staff & Salaries', icon: 'users' },
     { id: 'reports', label: 'Reports', icon: 'chart' },
     { id: 'settings', label: 'Settings', icon: 'gear' },
   ];
   return (
     <aside className="no-print w-64 shrink-0 bg-ivory-warm border-r border-teal-500/10 flex flex-col min-h-screen">
       <div className="px-5 pt-6 pb-4 border-b border-teal-500/10">
-        <div className="text-[10px] tracking-[0.25em] uppercase text-clay-500 mb-1">A/RWA Treasury</div>
+        <div className="text-[11px] tracking-[0.3em] uppercase text-clay-500 font-semibold mb-1.5">A/RWA Treasury</div>
         <div className="font-display text-[22px] leading-tight text-teal-500">{society.society_name}</div>
-        <div className="text-xs text-ink-muted mt-1">Period · <span className="font-medium text-ink-soft">{periodLabel(currentPeriod)}</span></div>
+        <div className="text-xs text-ink-soft mt-1.5 font-medium">Period · <span className="text-ink">{periodLabel(currentPeriod)}</span></div>
       </div>
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {items.map(it => (
           <button key={it.id} onClick={() => setView(it.id)}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all ${
-              view === it.id ? 'bg-teal-500 text-ivory-warm shadow-sm' : 'text-ink-soft hover:bg-ivory-deep'
+              view === it.id ? 'bg-teal-500 text-ivory-warm shadow-sm font-semibold' : 'text-ink-soft hover:bg-ivory-deep font-medium'
             }`}>
             <Icon name={it.icon} />
             <span className="flex-1 text-left">{it.label}</span>
             {it.badge > 0 && (
-              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${view===it.id ? 'bg-ivory-warm text-teal-500' : 'bg-crimson-500 text-white'}`}>
+              <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${view===it.id ? 'bg-ivory-warm text-teal-500' : 'bg-crimson-500 text-white'}`}>
                 {it.badge}
               </span>
             )}
           </button>
         ))}
       </nav>
-      <div className="px-3 pb-3">
-        <DriveStatusBadge status={driveStatus} lastSync={driveLastSync} onClick={onDriveBadgeClick} />
+      <div className="px-3 pb-2">
+        <SyncStatusBadge status={driveStatus} lastSync={driveLastSync} onClick={onDriveBadgeClick} />
       </div>
-      <div className="px-5 py-4 border-t border-teal-500/10">
-        <div className="text-[10px] uppercase tracking-widest text-ink-muted">Treasurer</div>
-        <div className="text-sm font-medium text-ink mt-0.5">{society.treasurer_name || 'Set in Settings'}</div>
-        {society.treasurer_phone && <div className="text-xs text-ink-muted mt-0.5">{society.treasurer_phone}</div>}
+      <div className="px-5 py-3 border-t border-teal-500/10 flex items-center justify-between">
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-widest text-ink-muted font-semibold">Treasurer</div>
+          <div className="text-sm font-semibold text-ink mt-0.5 truncate">{society.treasurer_name || 'Set in Settings'}</div>
+          {society.treasurer_phone && <div className="text-[11px] text-ink-muted mt-0.5 truncate">{society.treasurer_phone}</div>}
+        </div>
+        {hasPw && onLogout && (
+          <button onClick={onLogout} title="Logout" className="p-2 rounded-md hover:bg-crimson-500/10 text-ink-muted hover:text-crimson-500 shrink-0">
+            <Icon name="lock" />
+          </button>
+        )}
       </div>
     </aside>
   );
@@ -1625,51 +1631,136 @@ function RecordPayment({ flats, payments, addPayments, currentPeriod, config, se
 function Receipt({ p, config }) {
   const periods = Array.isArray(p.periods) ? p.periods : (p.period ? [p.period] : []);
   const isMulti = periods.length > 1;
+
+  const ownerName = p.flat?.owner_name || '—';
+  const ownerPhone = p.flat?.owner_phone || '';
+  const ownerEmail = p.flat?.owner_email || '';
+
+  const receiptText = useMemo(() => {
+    const lines = [
+      `*${config.society_name} — Maintenance Receipt*`,
+      `Receipt No: ${p.receipt_no}`,
+      `Flat: ${p.flat_no}`,
+      `Owner: ${ownerName}`,
+      `Period: ${periodsLabel(periods)}`,
+      isMulti ? `Months: ${periods.map(periodLabel).join(', ')}` : '',
+      `Payment Date: ${p.paid_on}`,
+      `Mode: ${p.mode}`,
+      isMulti ? `Per month: ${inr(Math.round(p.per_period_amount ?? p.amount/periods.length))} × ${periods.length}` : '',
+      `*Total Amount: ${inr(p.amount)}*`,
+      p.notes ? `Notes: ${p.notes}` : '',
+      '',
+      'Received with thanks,',
+      config.treasurer_name || 'Treasurer',
+      'A/RWA',
+    ].filter(Boolean);
+    return lines.join('\n');
+  }, [p, config, periods, isMulti, ownerName]);
+
+  const shareWhatsApp = () => {
+    const phone = cleanPhone(ownerPhone);
+    const text = encodeURIComponent(receiptText);
+    const url = phone
+      ? `https://wa.me/${phone.length === 10 ? '91' + phone : phone}?text=${text}`
+      : `https://wa.me/?text=${text}`;
+    window.open(url, '_blank');
+  };
+  const shareEmail = () => {
+    const subject = encodeURIComponent(`Maintenance Receipt ${p.receipt_no} — ${config.society_name}`);
+    const body = encodeURIComponent(receiptText);
+    const to = ownerEmail ? encodeURIComponent(ownerEmail) : '';
+    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+  };
+  const shareSMS = () => {
+    const phone = cleanPhone(ownerPhone);
+    const text = encodeURIComponent(receiptText);
+    window.location.href = phone ? `sms:+91${phone.length === 10 ? phone : phone.slice(-10)}?body=${text}` : `sms:?body=${text}`;
+  };
+  const shareNative = async () => {
+    if (!navigator.share) { copyToClipboard(); return; }
+    try {
+      await navigator.share({
+        title: `Receipt ${p.receipt_no}`,
+        text: receiptText,
+      });
+    } catch (e) { /* user cancelled */ }
+  };
+  const copyToClipboard = () => {
+    navigator.clipboard?.writeText(receiptText).then(
+      () => alert('Receipt copied — paste anywhere'),
+      () => alert('Could not copy. Long-press the receipt text to copy manually.')
+    );
+  };
+
   return (
-    <div className="border border-dashed border-teal-500/30 rounded-md p-4 bg-ivory-deep/20">
-      <div className="flex justify-between items-start mb-3">
+    <div className="border-2 border-dashed border-teal-500/40 rounded-lg p-5 bg-ivory-warm">
+      <div className="flex justify-between items-start mb-4">
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-clay-500">Maintenance Receipt</div>
-          <div className="font-display text-lg text-teal-500 leading-tight">{config.society_name}</div>
+          <div className="text-[11px] uppercase tracking-widest text-clay-500 font-semibold">Maintenance Receipt</div>
+          <div className="font-display text-xl text-teal-500 leading-tight mt-0.5">{config.society_name}</div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase text-ink-muted">No.</div>
-          <div className="font-mono text-sm font-semibold text-ink">{p.receipt_no}</div>
+          <div className="text-[11px] uppercase tracking-wider text-ink-muted font-semibold">Receipt No.</div>
+          <div className="font-mono text-base font-bold text-ink">{p.receipt_no}</div>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <div><div className="text-ink-muted">Flat</div><div className="font-mono text-teal-500 font-semibold">{p.flat_no}</div></div>
-        <div><div className="text-ink-muted">Owner</div><div>{p.flat?.owner_name || '—'}</div></div>
+      <div className="grid grid-cols-2 gap-3 text-[13px]">
+        <div>
+          <div className="text-[11px] uppercase text-ink-muted font-semibold tracking-wider">Flat</div>
+          <div className="font-mono text-teal-500 font-bold text-base mt-0.5">{p.flat_no}</div>
+        </div>
+        <div>
+          <div className="text-[11px] uppercase text-ink-muted font-semibold tracking-wider">Owner</div>
+          <div className="font-semibold text-ink mt-0.5 truncate">{ownerName}</div>
+        </div>
         <div className="col-span-2">
-          <div className="text-ink-muted">{isMulti ? `Period (${periods.length} months)` : 'Period'}</div>
-          <div className="font-medium">{periodsLabel(periods)}</div>
+          <div className="text-[11px] uppercase text-ink-muted font-semibold tracking-wider">{isMulti ? `Period (${periods.length} months)` : 'Period'}</div>
+          <div className="font-semibold text-ink mt-0.5">{periodsLabel(periods)}</div>
           {isMulti && (
-            <div className="text-[10px] text-ink-muted mt-0.5 leading-snug">
+            <div className="text-[11px] text-ink-muted mt-1 leading-snug">
               {periods.map(periodLabel).join(' · ')}
             </div>
           )}
         </div>
-        <div><div className="text-ink-muted">Date</div><div>{p.paid_on}</div></div>
-        <div><div className="text-ink-muted">Mode</div><div>{p.mode}</div></div>
-        <div className="col-span-2 border-t border-dashed border-teal-500/20 pt-2 mt-1">
+        <div>
+          <div className="text-[11px] uppercase text-ink-muted font-semibold tracking-wider">Date</div>
+          <div className="font-semibold text-ink mt-0.5">{p.paid_on}</div>
+        </div>
+        <div>
+          <div className="text-[11px] uppercase text-ink-muted font-semibold tracking-wider">Mode</div>
+          <div className="font-semibold text-ink mt-0.5">{p.mode}</div>
+        </div>
+        <div className="col-span-2 border-t border-dashed border-teal-500/30 pt-3 mt-1">
           {isMulti && (
-            <div className="flex justify-between text-[11px] text-ink-muted mb-1">
+            <div className="flex justify-between text-[12px] text-ink-soft mb-1.5">
               <span>Per month</span>
-              <span className="font-mono tabular">{inr(Math.round((p.per_period_amount ?? p.amount/periods.length)))} × {periods.length}</span>
+              <span className="font-mono tabular font-semibold">{inr(Math.round((p.per_period_amount ?? p.amount/periods.length)))} × {periods.length}</span>
             </div>
           )}
-          <div className="flex justify-between">
-            <span className="text-ink-muted text-xs">Total amount</span>
-            <span className="font-mono font-semibold tabular text-ink">{inr(p.amount)}</span>
+          <div className="flex justify-between items-baseline">
+            <span className="text-ink-muted text-[12px] uppercase font-semibold tracking-wider">Total Amount</span>
+            <span className="font-mono font-bold tabular text-teal-500 text-xl">{inr(p.amount)}</span>
           </div>
         </div>
       </div>
-      {p.notes && <div className="mt-3 text-[11px] text-ink-muted border-t pt-2">{p.notes}</div>}
-      <div className="mt-4 flex justify-between items-end text-[10px] text-ink-muted">
+      {p.notes && <div className="mt-3 text-xs text-ink-soft border-t border-teal-500/20 pt-2"><span className="font-semibold">Notes:</span> {p.notes}</div>}
+      <div className="mt-4 flex justify-between items-end text-[11px] text-ink-muted border-t border-teal-500/20 pt-3">
         <div>Received with thanks by Treasurer</div>
-        <div>{config.treasurer_name || ''}</div>
+        <div className="font-semibold text-ink">{config.treasurer_name || ''}</div>
       </div>
-      <Button variant="ghost" size="sm" className="mt-3 w-full" onClick={() => window.print()}><Icon name="print" /> Print</Button>
+
+      {/* Share actions */}
+      <div className="no-print mt-4 grid grid-cols-2 gap-2">
+        <Button size="sm" onClick={shareWhatsApp} className="bg-[#25D366] text-white hover:bg-[#1FB956]" variant="primary"><Icon name="whatsapp" /> WhatsApp</Button>
+        <Button size="sm" variant="outline" onClick={shareEmail}><Icon name="mail" /> Email</Button>
+        <Button size="sm" variant="soft" onClick={shareSMS}><Icon name="msg" /> SMS</Button>
+        <Button size="sm" variant="soft" onClick={shareNative}><Icon name="share" /> Share…</Button>
+        <Button size="sm" variant="ghost" onClick={copyToClipboard}><Icon name="list" /> Copy text</Button>
+        <Button size="sm" variant="ghost" onClick={() => window.print()}><Icon name="print" /> Print</Button>
+      </div>
+      {!ownerPhone && !ownerEmail && (
+        <div className="no-print mt-2 text-[11px] text-clay-500">Tip: add the owner's phone/email in the Flats &amp; Owners section so WhatsApp/Email auto-fill the recipient.</div>
+      )}
     </div>
   );
 }
@@ -1823,10 +1914,14 @@ function PaymentHistory({ payments, flats, deletePayment, toast }) {
 function Defaulters({ flats, payments, currentPeriod, config, toast }) {
   const [periodFrom, setPeriodFrom] = useState(periodMinus(currentPeriod, 5));
   const [periodTo, setPeriodTo] = useState(currentPeriod);
-  const [scope, setScope] = useState('current');   // current | range
+  const [scope, setScope] = useState('current');   // current | range | chronic
+  const [groupBy, setGroupBy] = useState('tower'); // tower | severity | none
+  const [towerFilter, setTowerFilter] = useState('all');
 
+  // For chronic mode, look back 12 months
   const periods = useMemo(() => {
     if (scope === 'current') return [currentPeriod];
+    if (scope === 'chronic') return periodsBetween(periodMinus(currentPeriod, 11), currentPeriod);
     return periodsBetween(periodFrom, periodTo);
   }, [scope, currentPeriod, periodFrom, periodTo]);
 
@@ -1834,6 +1929,7 @@ function Defaulters({ flats, payments, currentPeriod, config, toast }) {
     const out = [];
     const occupied = flats.filter(f => f.occupancy !== 'Vacant');
     occupied.forEach(f => {
+      if (towerFilter !== 'all' && f.tower !== towerFilter) return;
       const unpaidPeriods = [];
       let totalDue = 0;
       periods.forEach(p => {
@@ -1846,13 +1942,53 @@ function Defaulters({ flats, payments, currentPeriod, config, toast }) {
       if (unpaidPeriods.length) {
         const allFlatPays = payments.filter(pay => pay.flat_no === f.flat_no);
         const lastPaid = allFlatPays.sort((a,b) => (b.paid_on||'').localeCompare(a.paid_on||''))[0];
-        out.push({ ...f, unpaidPeriods, totalDue, lastPaid });
+        // severity
+        const n = unpaidPeriods.length;
+        const severity = n >= 6 ? 4 : n >= 3 ? 3 : n >= 2 ? 2 : 1;
+        out.push({ ...f, unpaidPeriods, totalDue, lastPaid, severity });
       }
     });
-    return out.sort((a,b) => b.totalDue - a.totalDue);
-  }, [flats, payments, periods]);
+    // chronic mode: only show 3+ months
+    const filtered = scope === 'chronic' ? out.filter(d => d.unpaidPeriods.length >= 3) : out;
+    return filtered.sort((a,b) => b.totalDue - a.totalDue);
+  }, [flats, payments, periods, scope, towerFilter]);
 
   const totalOutstanding = defaulters.reduce((s,d) => s + d.totalDue, 0);
+
+  // Tower-wise summary
+  const towerSummary = useMemo(() => {
+    const map = {};
+    ['A','B','C','D','J','K','L','M','Shops'].forEach(t => {
+      map[t] = { count: 0, amount: 0, chronic: 0 };
+    });
+    defaulters.forEach(d => {
+      if (!map[d.tower]) map[d.tower] = { count: 0, amount: 0, chronic: 0 };
+      map[d.tower].count++;
+      map[d.tower].amount += d.totalDue;
+      if (d.unpaidPeriods.length >= 3) map[d.tower].chronic++;
+    });
+    return map;
+  }, [defaulters]);
+
+  // Group defaulters
+  const grouped = useMemo(() => {
+    if (groupBy === 'none') return [{ key: 'All', items: defaulters }];
+    if (groupBy === 'severity') {
+      const sevMap = { 4: 'Chronic (6+ months)', 3: 'High (3-5 months)', 2: '2 months', 1: '1 month' };
+      const groups = {};
+      [4,3,2,1].forEach(s => { groups[s] = { key: sevMap[s], severity: s, items: [] }; });
+      defaulters.forEach(d => groups[d.severity].items.push(d));
+      return Object.values(groups).filter(g => g.items.length);
+    }
+    // tower
+    const groups = {};
+    ['A','B','C','D','J','K','L','M','Shops'].forEach(t => { groups[t] = { key: `Tower ${t}`, items: [] }; });
+    defaulters.forEach(d => {
+      if (!groups[d.tower]) groups[d.tower] = { key: `Tower ${d.tower}`, items: [] };
+      groups[d.tower].items.push(d);
+    });
+    return Object.values(groups).filter(g => g.items.length);
+  }, [defaulters, groupBy]);
 
   const reminderMessage = (d) => {
     const periodStr = d.unpaidPeriods.length === 1
@@ -1868,6 +2004,7 @@ function Defaulters({ flats, payments, currentPeriod, config, toast }) {
       months_due: d.unpaidPeriods.length, total_due: d.totalDue,
       periods_unpaid: d.unpaidPeriods.map(periodLabel).join(' | '),
       last_paid_on: d.lastPaid?.paid_on || 'never',
+      severity: d.severity,
     }));
     download(`defaulters-${todayISO()}.csv`, toCSV(rows), 'text/csv');
     toast(`Exported ${rows.length} defaulters`, 'success');
@@ -1875,80 +2012,134 @@ function Defaulters({ flats, payments, currentPeriod, config, toast }) {
 
   const [showMsg, setShowMsg] = useState(null);
 
+  const sevClass = (s) => `sev-${s}`;
+  const sevLabel = (s) => ({ 4: 'CHRONIC', 3: 'HIGH', 2: 'MED', 1: 'LOW' })[s];
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-[11px] uppercase tracking-[0.2em] text-clay-500 mb-1">Outstanding</div>
+          <div className="text-[11px] uppercase tracking-[0.2em] text-clay-500 mb-1 font-semibold">Outstanding</div>
           <h1 className="font-display text-4xl text-ink leading-none">Defaulters</h1>
-          <p className="text-sm text-ink-muted mt-1.5">{defaulters.length} flats with dues · <span className="font-medium text-crimson-500 tabular">{inr(totalOutstanding)}</span> outstanding</p>
+          <p className="text-sm text-ink-soft mt-1.5"><span className="font-semibold text-ink">{defaulters.length}</span> flats with dues · <span className="font-bold text-crimson-500 tabular text-base">{inr(totalOutstanding)}</span> outstanding</p>
         </div>
         <Button variant="outline" onClick={exportCSV}><Icon name="download" /> Export list</Button>
       </div>
 
+      {/* Tower summary cards */}
+      <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
+        {['A','B','C','D','J','K','L','M','Shops'].map(t => {
+          const s = towerSummary[t] || { count: 0, amount: 0, chronic: 0 };
+          const active = towerFilter === t;
+          const allActive = towerFilter === 'all';
+          return (
+            <button
+              key={t}
+              onClick={() => setTowerFilter(active ? 'all' : t)}
+              className={`p-3 rounded-lg text-left transition ${
+                active ? 'bg-teal-500 text-ivory-warm shadow' :
+                s.count === 0 ? 'bg-moss-500/10 text-moss-600 ring-1 ring-moss-500/20' :
+                s.chronic > 0 ? 'bg-crimson-500/10 text-crimson-600 ring-1 ring-crimson-500/30' :
+                'bg-clay-500/10 text-clay-600 ring-1 ring-clay-500/20'
+              } ${!allActive && !active ? 'opacity-50' : ''}`}
+            >
+              <div className="font-display text-lg leading-none">{t}</div>
+              <div className="text-[11px] mt-1 font-semibold">{s.count} unpaid</div>
+              <div className="text-[10px] tabular mt-0.5">{inrShort(s.amount)}</div>
+              {s.chronic > 0 && <div className="text-[10px] font-bold mt-0.5">{s.chronic} chronic</div>}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="bg-ivory-warm rounded-xl ring-soft p-4 flex flex-wrap items-center gap-3">
         <div className="bg-ivory-deep/50 rounded-lg p-1 flex text-sm">
-          <button onClick={() => setScope('current')} className={`px-3 py-1 rounded ${scope==='current' ? 'bg-teal-500 text-ivory-warm' : 'text-ink-soft'}`}>This month</button>
-          <button onClick={() => setScope('range')} className={`px-3 py-1 rounded ${scope==='range' ? 'bg-teal-500 text-ivory-warm' : 'text-ink-soft'}`}>Period range</button>
+          <button onClick={() => setScope('current')} className={`px-3 py-1.5 rounded font-semibold ${scope==='current' ? 'bg-teal-500 text-ivory-warm' : 'text-ink-soft'}`}>This month</button>
+          <button onClick={() => setScope('range')} className={`px-3 py-1.5 rounded font-semibold ${scope==='range' ? 'bg-teal-500 text-ivory-warm' : 'text-ink-soft'}`}>Range</button>
+          <button onClick={() => setScope('chronic')} className={`px-3 py-1.5 rounded font-semibold ${scope==='chronic' ? 'bg-crimson-500 text-white' : 'text-ink-soft'}`}>Chronic (3+ mo)</button>
         </div>
         {scope === 'range' && (
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-ink-muted">From</span>
+            <span className="text-ink-soft font-medium">From</span>
             <Input type="month" value={periodFrom} onChange={e => setPeriodFrom(e.target.value)} className="w-auto" />
-            <span className="text-ink-muted">to</span>
+            <span className="text-ink-soft font-medium">to</span>
             <Input type="month" value={periodTo} onChange={e => setPeriodTo(e.target.value)} className="w-auto" />
             <span className="text-xs text-ink-muted">{periods.length} months</span>
           </div>
         )}
-      </div>
-
-      <div className="bg-ivory-warm rounded-xl ring-soft overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-ivory-deep/60 text-[11px] uppercase tracking-wider text-ink-muted">
-              <tr>
-                <th className="text-left px-5 py-2.5">Flat</th>
-                <th className="text-left">Owner</th>
-                <th className="text-left">Type</th>
-                <th className="text-right">Months</th>
-                <th className="text-right">Amount Due</th>
-                <th className="text-left">Last Paid</th>
-                <th className="text-left">Contact</th>
-                <th className="text-right pr-5">Notify</th>
-              </tr>
-            </thead>
-            <tbody className="divide-soft">
-              {defaulters.length === 0 && (
-                <tr><td colSpan="8" className="text-center py-10 text-moss-500"><Icon name="check" className="w-6 h-6 inline mr-1" /> All clear — no defaulters for this period.</td></tr>
-              )}
-              {defaulters.map(d => (
-                <tr key={d.id} className="hover:bg-ivory-deep/40">
-                  <td className="px-5 py-3 font-mono font-medium text-teal-500">{d.flat_no}</td>
-                  <td>
-                    <div className="font-medium text-ink">{d.owner_name || <span className="text-ink-muted italic">— unassigned —</span>}</div>
-                    <div className="text-[11px] text-ink-muted">{d.tower} · {d.occupancy}</div>
-                  </td>
-                  <td><span className="chip chip-info">{d.type}</span></td>
-                  <td className="text-right tabular font-medium">{d.unpaidPeriods.length}</td>
-                  <td className="text-right tabular font-semibold text-crimson-500">{inr(d.totalDue)}</td>
-                  <td className="text-xs text-ink-muted">{d.lastPaid ? d.lastPaid.paid_on : <span className="italic">never</span>}</td>
-                  <td>
-                    <div className="flex gap-1.5">
-                      {d.owner_phone && <a href={waLink(d.owner_phone)} target="_blank" rel="noopener" title="WhatsApp" className="p-1.5 rounded bg-moss-500 text-white hover:bg-moss-600"><Icon name="msg" className="w-3.5 h-3.5" /></a>}
-                      {d.owner_phone && <a href={`tel:${cleanPhone(d.owner_phone)}`} title="Call" className="p-1.5 rounded bg-teal-500 text-ivory-warm hover:bg-teal-600"><Icon name="phone" className="w-3.5 h-3.5" /></a>}
-                      {d.owner_phone && <a href={`sms:${cleanPhone(d.owner_phone)}?body=${encodeURIComponent(reminderMessage(d))}`} title="SMS" className="p-1.5 rounded bg-clay-500 text-white hover:bg-clay-600"><Icon name="msg" className="w-3.5 h-3.5" /></a>}
-                      {d.owner_email && <a href={`mailto:${d.owner_email}?subject=${encodeURIComponent('Maintenance dues — ' + d.flat_no)}&body=${encodeURIComponent(reminderMessage(d))}`} title="Email" className="p-1.5 rounded bg-ink text-ivory-warm hover:bg-ink-soft"><Icon name="mail" className="w-3.5 h-3.5" /></a>}
-                    </div>
-                  </td>
-                  <td className="text-right pr-5">
-                    <button onClick={() => setShowMsg({ d, text: reminderMessage(d) })} className="text-xs text-teal-500 hover:underline">View message</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="ml-auto bg-ivory-deep/50 rounded-lg p-1 flex text-sm">
+          <span className="px-2 py-1 text-[11px] uppercase tracking-wider text-ink-muted font-semibold self-center">Group by</span>
+          <button onClick={() => setGroupBy('tower')} className={`px-3 py-1.5 rounded font-semibold ${groupBy==='tower' ? 'bg-teal-500 text-ivory-warm' : 'text-ink-soft'}`}>Tower</button>
+          <button onClick={() => setGroupBy('severity')} className={`px-3 py-1.5 rounded font-semibold ${groupBy==='severity' ? 'bg-teal-500 text-ivory-warm' : 'text-ink-soft'}`}>Severity</button>
+          <button onClick={() => setGroupBy('none')} className={`px-3 py-1.5 rounded font-semibold ${groupBy==='none' ? 'bg-teal-500 text-ivory-warm' : 'text-ink-soft'}`}>None</button>
         </div>
       </div>
+
+      {defaulters.length === 0 && (
+        <div className="bg-moss-500/10 ring-1 ring-moss-500/30 rounded-xl p-10 text-center">
+          <Icon name="check" className="w-10 h-10 mx-auto text-moss-500 mb-2" />
+          <div className="font-display text-2xl text-moss-600">All clear!</div>
+          <div className="text-sm text-ink-soft mt-1">No defaulters for {scope === 'current' ? periodLabel(currentPeriod) : 'this period'}.</div>
+        </div>
+      )}
+
+      {grouped.map(group => (
+        <div key={group.key} className="bg-ivory-warm rounded-xl ring-soft overflow-hidden">
+          <div className="px-5 py-3 bg-ivory-deep/50 border-b border-teal-500/10 flex items-center justify-between">
+            <div className="font-display text-lg text-teal-500">{group.key}</div>
+            <div className="text-sm text-ink-soft font-medium">
+              {group.items.length} flat{group.items.length !== 1 ? 's' : ''} ·
+              <span className="font-bold text-crimson-500 tabular ml-1">{inr(group.items.reduce((s,d) => s + d.totalDue, 0))}</span>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-ivory-deep/30 text-[12px] uppercase tracking-wider text-ink-soft font-semibold">
+                <tr>
+                  <th className="text-left px-5 py-2.5">Flat</th>
+                  <th className="text-left">Owner</th>
+                  <th className="text-left">Severity</th>
+                  <th className="text-right">Months</th>
+                  <th className="text-right">Amount Due</th>
+                  <th className="text-left">Last Paid</th>
+                  <th className="text-left">Contact</th>
+                  <th className="text-right pr-5">Notify</th>
+                </tr>
+              </thead>
+              <tbody className="divide-soft">
+                {group.items.map(d => (
+                  <tr key={d.id} className={`hover:bg-ivory-deep/40 ${d.severity >= 3 ? 'bg-crimson-500/5' : ''}`}>
+                    <td className="px-5 py-3 font-mono font-bold text-teal-500 text-base">{d.flat_no}</td>
+                    <td>
+                      <div className="font-semibold text-ink">{d.owner_name || <span className="text-ink-muted italic font-normal">— unassigned —</span>}</div>
+                      <div className="text-[12px] text-ink-soft">{d.tower} · {d.type} · {d.occupancy}</div>
+                    </td>
+                    <td>
+                      <span className={`inline-flex items-center px-2 py-1 rounded text-[11px] font-bold tracking-wider ${sevClass(d.severity)}`}>
+                        {sevLabel(d.severity)}
+                      </span>
+                    </td>
+                    <td className="text-right tabular font-bold text-ink">{d.unpaidPeriods.length}</td>
+                    <td className="text-right tabular font-bold text-crimson-500 text-base">{inr(d.totalDue)}</td>
+                    <td className="text-xs text-ink-soft">{d.lastPaid ? d.lastPaid.paid_on : <span className="italic text-crimson-500 font-medium">never</span>}</td>
+                    <td>
+                      <div className="flex gap-1.5">
+                        {d.owner_phone && <a href={`${waLink(d.owner_phone)}?text=${encodeURIComponent(reminderMessage(d))}`} target="_blank" rel="noopener" title="WhatsApp" className="p-1.5 rounded bg-[#25D366] text-white hover:opacity-90"><Icon name="whatsapp" className="w-3.5 h-3.5" /></a>}
+                        {d.owner_phone && <a href={`tel:${cleanPhone(d.owner_phone)}`} title="Call" className="p-1.5 rounded bg-teal-500 text-ivory-warm hover:bg-teal-600"><Icon name="phone" className="w-3.5 h-3.5" /></a>}
+                        {d.owner_phone && <a href={`sms:${cleanPhone(d.owner_phone)}?body=${encodeURIComponent(reminderMessage(d))}`} title="SMS" className="p-1.5 rounded bg-clay-500 text-white hover:bg-clay-600"><Icon name="msg" className="w-3.5 h-3.5" /></a>}
+                        {d.owner_email && <a href={`mailto:${d.owner_email}?subject=${encodeURIComponent('Maintenance dues — ' + d.flat_no)}&body=${encodeURIComponent(reminderMessage(d))}`} title="Email" className="p-1.5 rounded bg-ink text-ivory-warm hover:opacity-90"><Icon name="mail" className="w-3.5 h-3.5" /></a>}
+                      </div>
+                    </td>
+                    <td className="text-right pr-5">
+                      <button onClick={() => setShowMsg({ d, text: reminderMessage(d) })} className="text-xs text-teal-500 hover:underline font-semibold">View message</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
 
       <Modal open={!!showMsg} onClose={() => setShowMsg(null)} title={showMsg ? `Reminder for ${showMsg.d.flat_no}` : ''} maxWidth="max-w-xl"
         footer={<>
@@ -1957,9 +2148,10 @@ function Defaulters({ flats, payments, currentPeriod, config, toast }) {
         </>}>
         {showMsg && <>
           <Textarea value={showMsg.text} onChange={e => setShowMsg({...showMsg, text: e.target.value})} rows={9} />
-          <div className="mt-3 flex gap-2 text-xs">
-            {showMsg.d.owner_phone && <a href={`${waLink(showMsg.d.owner_phone)}?text=${encodeURIComponent(showMsg.text)}`} target="_blank" rel="noopener" className="px-3 py-1.5 bg-moss-500 text-white rounded-md inline-flex items-center gap-1.5">Send via WhatsApp <Icon name="arrowRight" className="w-3 h-3" /></a>}
-            {showMsg.d.owner_email && <a href={`mailto:${showMsg.d.owner_email}?subject=${encodeURIComponent('Maintenance dues — ' + showMsg.d.flat_no)}&body=${encodeURIComponent(showMsg.text)}`} className="px-3 py-1.5 bg-ink text-ivory-warm rounded-md inline-flex items-center gap-1.5">Send via Email <Icon name="arrowRight" className="w-3 h-3" /></a>}
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            {showMsg.d.owner_phone && <a href={`${waLink(showMsg.d.owner_phone)}?text=${encodeURIComponent(showMsg.text)}`} target="_blank" rel="noopener" className="px-3 py-1.5 bg-[#25D366] text-white rounded-md inline-flex items-center gap-1.5 font-semibold"><Icon name="whatsapp" className="w-3.5 h-3.5" /> Send via WhatsApp</a>}
+            {showMsg.d.owner_email && <a href={`mailto:${showMsg.d.owner_email}?subject=${encodeURIComponent('Maintenance dues — ' + showMsg.d.flat_no)}&body=${encodeURIComponent(showMsg.text)}`} className="px-3 py-1.5 bg-ink text-ivory-warm rounded-md inline-flex items-center gap-1.5 font-semibold"><Icon name="mail" className="w-3.5 h-3.5" /> Send via Email</a>}
+            {showMsg.d.owner_phone && <a href={`sms:${cleanPhone(showMsg.d.owner_phone)}?body=${encodeURIComponent(showMsg.text)}`} className="px-3 py-1.5 bg-clay-500 text-white rounded-md inline-flex items-center gap-1.5 font-semibold"><Icon name="msg" className="w-3.5 h-3.5" /> Send via SMS</a>}
           </div>
         </>}
       </Modal>
@@ -2129,8 +2321,9 @@ function Reports({ flats, payments, currentPeriod, config }) {
    SETTINGS
    =========================================================== */
 
-function Settings({ config, setConfig, flats, setFlats, payments, setPayments, toast,
-                    driveStatus, driveLastSync, onOpenDriveSetup, onDisconnectDrive, onForgetDrive, onPullDrive, onPushDrive }) {
+function Settings({ config, setConfig, flats, setFlats, payments, setPayments, expenses, setExpenses, staff, setStaff, toast,
+                    syncStatus, lastSync, onOpenSync, onForgetSync, onPullSync, onPushSync,
+                    pwHash, onSetPassword, onRemovePassword }) {
   const [draft, setDraft] = useState(config);
   useEffect(() => setDraft(config), [config]);
   const fileRef = useRef();
@@ -2179,24 +2372,25 @@ function Settings({ config, setConfig, flats, setFlats, payments, setPayments, t
     if (!confirm('Delete all data and reinitialise the society from scratch? This cannot be undone.')) return;
     if (!confirm('Are you absolutely sure? Type-confirm by pressing OK again.')) return;
     await storage.del(K_FLATS); await storage.del(K_PAYMENTS); await storage.del(K_CONFIG);
+    await storage.del(K_EXPENSES); await storage.del(K_STAFF);
     location.reload();
   };
 
-  const driveTimeAgo = (() => {
-    if (!driveLastSync) return '—';
-    const s = Math.floor((Date.now() - driveLastSync) / 1000);
+  const syncTimeAgo = (() => {
+    if (!lastSync) return '—';
+    const s = Math.floor((Date.now() - lastSync) / 1000);
     if (s < 60) return 'just now';
     if (s < 3600) return `${Math.floor(s/60)} min ago`;
     if (s < 86400) return `${Math.floor(s/3600)} hrs ago`;
-    return new Date(driveLastSync).toLocaleString();
+    return new Date(lastSync).toLocaleString();
   })();
 
   return (
     <div className="space-y-5">
       <div>
-        <div className="text-[11px] uppercase tracking-[0.2em] text-clay-500 mb-1">Configuration</div>
+        <div className="text-[11px] uppercase tracking-[0.2em] text-clay-500 font-semibold mb-1">Configuration</div>
         <h1 className="font-display text-4xl text-ink leading-none">Settings</h1>
-        <p className="text-sm text-ink-muted mt-1.5">Society identity, maintenance rates, Google Drive sync, backups and reset.</p>
+        <p className="text-sm text-ink-soft mt-1.5">Society identity, maintenance rates, GitHub sync, access password and backups.</p>
       </div>
 
       <div className="bg-ivory-warm rounded-xl ring-soft p-5">
@@ -2211,44 +2405,60 @@ function Settings({ config, setConfig, flats, setFlats, payments, setPayments, t
         <div className="mt-4 flex justify-end"><Button onClick={save}>Save</Button></div>
       </div>
 
+      {/* GitHub sync */}
       <div className="bg-ivory-warm rounded-xl ring-soft p-5">
         <div className="flex items-center justify-between mb-3">
-          <div className="font-display text-lg text-teal-500 flex items-center gap-2"><Icon name="cloud" /> Google Drive Sync</div>
-          <DriveStatusBadge status={driveStatus} lastSync={driveLastSync} onClick={() => {}} />
+          <div className="font-display text-lg text-teal-500 flex items-center gap-2"><Icon name="cloud" /> GitHub Sync</div>
+          <SyncStatusBadge status={syncStatus} lastSync={lastSync} onClick={() => {}} />
         </div>
-        {!drive.isConfigured() ? (
+        {!github.isConfigured() ? (
           <div>
-            <p className="text-sm text-ink-soft mb-3">Not configured. Connect to back up all data to the treasurer's Google Drive automatically. Works across devices using the same Google account.</p>
-            <Button onClick={onOpenDriveSetup}><Icon name="cloud" /> Set up Drive sync</Button>
+            <p className="text-sm text-ink-soft mb-3">Not configured. Connect to back up all data to a GitHub repository automatically. Works across devices that share the same GitHub token.</p>
+            <Button onClick={onOpenSync}><Icon name="cloud" /> Set up GitHub sync</Button>
           </div>
         ) : (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div className="bg-ivory-deep/40 rounded-md p-3 ring-soft">
-                <div className="text-[10px] uppercase text-ink-muted">Connected as</div>
-                <div className="font-medium text-ink mt-0.5 truncate">{drive.user?.email || drive.user?.name || '(unknown)'}</div>
+                <div className="text-[10px] uppercase text-ink-muted font-semibold tracking-wider">Repository</div>
+                <div className="font-mono text-[12px] font-semibold text-ink mt-0.5 truncate">{github.config.owner}/{github.config.repo}</div>
               </div>
               <div className="bg-ivory-deep/40 rounded-md p-3 ring-soft">
-                <div className="text-[10px] uppercase text-ink-muted">Last sync</div>
-                <div className="font-medium text-ink mt-0.5">{driveTimeAgo}</div>
+                <div className="text-[10px] uppercase text-ink-muted font-semibold tracking-wider">Last sync</div>
+                <div className="font-semibold text-ink mt-0.5">{syncTimeAgo}</div>
               </div>
               <div className="bg-ivory-deep/40 rounded-md p-3 ring-soft md:col-span-2">
-                <div className="text-[10px] uppercase text-ink-muted">Drive folder</div>
-                <div className="font-mono text-[12px] text-ink mt-0.5">{DRIVE_FOLDER_NAME}/</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">Contains flats.json, payments.json, config.json. Visible in your Google Drive.</div>
+                <div className="text-[10px] uppercase text-ink-muted font-semibold tracking-wider">Data file</div>
+                <div className="font-mono text-[12px] font-semibold text-ink mt-0.5">{github.config.path} <span className="text-ink-muted font-normal">(branch: {github.config.branch})</span></div>
+                <a href={`https://github.com/${github.config.owner}/${github.config.repo}/blob/${github.config.branch}/${github.config.path}`} target="_blank" rel="noopener noreferrer" className="text-[11px] text-teal-500 underline mt-1 inline-block">Open on GitHub →</a>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="soft" onClick={onPullDrive}><Icon name="download" /> Pull from Drive (overwrite local)</Button>
-              <Button variant="soft" onClick={onPushDrive}><Icon name="upload" /> Push to Drive (overwrite Drive)</Button>
-              <Button variant="ghost" onClick={onDisconnectDrive}>Sign out</Button>
-              <Button variant="ghost" className="text-crimson-500 hover:bg-crimson-500/10" onClick={() => { if (confirm('Forget the saved OAuth Client ID? You will need to paste it again.')) onForgetDrive(); }}>Forget credentials</Button>
+              <Button variant="soft" onClick={onPullSync}><Icon name="download" /> Pull from GitHub (overwrite local)</Button>
+              <Button variant="soft" onClick={onPushSync}><Icon name="upload" /> Push to GitHub (overwrite remote)</Button>
+              <Button variant="ghost" className="text-crimson-500 hover:bg-crimson-500/10" onClick={() => { if (confirm('Forget the saved GitHub token & repo info? You will need to set it up again.')) onForgetSync(); }}>Forget credentials</Button>
             </div>
-            {drive.isFileOrigin() && (
-              <div className="text-xs bg-crimson-500/10 ring-1 ring-crimson-500/30 text-crimson-500 rounded-md px-3 py-2">
-                You opened this file via <code>file://</code>. Drive sync only works when the app is hosted on a web server (or via http://localhost).
-              </div>
-            )}
+          </div>
+        )}
+      </div>
+
+      {/* Access password */}
+      <div className="bg-ivory-warm rounded-xl ring-soft p-5">
+        <div className="font-display text-lg text-teal-500 mb-3 flex items-center gap-2"><Icon name="lock" /> Access Password</div>
+        {!pwHash ? (
+          <div>
+            <p className="text-sm text-ink-soft mb-3">No password set. Anyone with this device can open the portal. Set a password so the treasurer's data is protected on this device.</p>
+            <Button onClick={onSetPassword}><Icon name="lock" /> Set Access Password</Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="bg-moss-500/10 ring-1 ring-moss-500/30 text-moss-500 rounded-md px-3 py-2 text-xs flex items-center gap-2">
+              <Icon name="check" className="w-4 h-4" /> Password protection is active. Session expires after 24 hours of inactivity.
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="soft" onClick={onSetPassword}><Icon name="edit" /> Change password</Button>
+              <Button variant="ghost" className="text-crimson-500 hover:bg-crimson-500/10" onClick={onRemovePassword}>Remove password</Button>
+            </div>
           </div>
         )}
       </div>
@@ -2304,18 +2514,18 @@ function Settings({ config, setConfig, flats, setFlats, payments, setPayments, t
 }
 
 /* ===========================================================
-   GOOGLE DRIVE — SETUP MODAL & STATUS UI
+   GITHUB SYNC — STATUS BADGE & SETUP MODAL
    =========================================================== */
 
-function DriveStatusBadge({ status, lastSync, onClick }) {
+function SyncStatusBadge({ status, lastSync, onClick }) {
   // status: 'disabled' | 'connecting' | 'connected' | 'syncing' | 'error' | 'offline'
   const map = {
-    disabled:   { cls: 'bg-ivory-deep text-ink-muted ring-soft',   dot: 'bg-ink-muted/50',  label: 'Local only' },
-    connecting: { cls: 'bg-clay-500/10 text-clay-500 ring-1 ring-clay-500/30', dot: 'bg-clay-500 animate-pulse', label: 'Connecting…' },
-    syncing:    { cls: 'bg-teal-500/10 text-teal-500 ring-1 ring-teal-500/30', dot: 'bg-teal-500 animate-pulse', label: 'Syncing…' },
-    connected:  { cls: 'bg-moss-500/10 text-moss-500 ring-1 ring-moss-500/30', dot: 'bg-moss-500', label: 'Synced' },
-    offline:    { cls: 'bg-clay-500/10 text-clay-500 ring-1 ring-clay-500/30', dot: 'bg-clay-500', label: 'Offline' },
-    error:      { cls: 'bg-crimson-500/10 text-crimson-500 ring-1 ring-crimson-500/30', dot: 'bg-crimson-500', label: 'Sync error' },
+    disabled:   { cls: 'bg-ivory-deep text-ink-muted ring-soft', dot: 'bg-ink-muted/50', label: 'Local only' },
+    connecting: { cls: 'bg-clay-500/10 text-clay-600 ring-1 ring-clay-500/30', dot: 'bg-clay-500 animate-pulse', label: 'Connecting…' },
+    syncing:    { cls: 'bg-teal-50 text-teal-600 ring-1 ring-teal-500/30', dot: 'bg-teal-500 animate-pulse', label: 'Syncing…' },
+    connected:  { cls: 'bg-moss-500/10 text-moss-600 ring-1 ring-moss-500/30', dot: 'bg-moss-500', label: 'Synced' },
+    offline:    { cls: 'bg-clay-500/10 text-clay-600 ring-1 ring-clay-500/30', dot: 'bg-clay-500', label: 'Offline' },
+    error:      { cls: 'bg-crimson-500/10 text-crimson-600 ring-1 ring-crimson-500/30', dot: 'bg-crimson-500', label: 'Sync error' },
   };
   const m = map[status] || map.disabled;
   const timeAgo = (() => {
@@ -2327,162 +2537,826 @@ function DriveStatusBadge({ status, lastSync, onClick }) {
     return `${Math.floor(s/86400)}d ago`;
   })();
   return (
-    <button onClick={onClick} className={`w-full text-left rounded-md px-3 py-2 text-[11px] inline-flex items-center gap-2 transition ${m.cls} hover:opacity-90`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`}></span>
+    <button onClick={onClick} className={`w-full text-left rounded-md px-3 py-2 inline-flex items-center gap-2 transition ${m.cls} hover:opacity-90`}>
+      <span className={`w-2 h-2 rounded-full ${m.dot}`}></span>
       <span className="flex-1">
-        <div className="font-medium tracking-wider uppercase text-[10px]">{m.label}</div>
-        {status === 'connected' && lastSync && <div className="text-[10px] opacity-70 normal-case font-normal mt-0.5">Drive · {timeAgo}</div>}
+        <div className="font-semibold tracking-wider uppercase text-[11px]">{m.label}</div>
+        {status === 'connected' && lastSync && <div className="text-[11px] opacity-80 normal-case font-normal mt-0.5">GitHub · {timeAgo}</div>}
       </span>
-      <Icon name="cloud" className="w-3.5 h-3.5 opacity-70" />
+      <Icon name="cloud" className="w-4 h-4 opacity-70" />
     </button>
   );
 }
 
-function DriveSetupModal({ open, onClose, onConnected, toast, hasLocalData }) {
-  const [step, setStep] = useState('intro'); // intro | instructions | connecting | conflict
-  const [clientId, setClientId] = useState(drive.clientId || '');
+function GitHubSetupModal({ open, onClose, onConnected, toast, hasLocalData }) {
+  const [step, setStep] = useState('intro'); // intro | instructions
+  const [token, setToken] = useState(github.config.token || '');
+  const [owner, setOwner] = useState(github.config.owner || '');
+  const [repo, setRepo] = useState(github.config.repo || '');
+  const [branch, setBranch] = useState(github.config.branch || 'main');
+  const [path, setPath] = useState(github.config.path || 'data.json');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const origin = window.location.origin;
-  const isFile = drive.isFileOrigin();
 
   useEffect(() => {
-    if (open) { setStep('intro'); setError(''); setClientId(drive.clientId || ''); }
+    if (open) {
+      setStep('intro'); setError('');
+      setToken(github.config.token || '');
+      setOwner(github.config.owner || '');
+      setRepo(github.config.repo || '');
+      setBranch(github.config.branch || 'main');
+      setPath(github.config.path || 'data.json');
+    }
   }, [open]);
 
   const copy = (text) => { navigator.clipboard?.writeText(text); toast('Copied', 'info'); };
 
   const connect = async () => {
-    if (!clientId.trim()) { setError('Paste your OAuth Client ID first'); return; }
+    if (!token.trim() || !owner.trim() || !repo.trim()) {
+      setError('Token, owner and repo are required.');
+      return;
+    }
     setBusy(true); setError('');
     try {
-      drive.saveClientId(clientId.trim());
-      await drive.connect({ promptUser: true });
-      setBusy(false);
-      await onConnected(); // parent decides what to do with existing data
+      github.saveConfig({
+        token: token.trim(), owner: owner.trim(), repo: repo.trim(),
+        branch: (branch || 'main').trim(), path: (path || 'data.json').trim(),
+      });
+      // verify
+      const info = await github.testConnection();
+      toast(`Connected to ${info.full_name}`, 'success');
+      await onConnected();
       onClose();
     } catch (e) {
-      setBusy(false);
       setError(e.message || String(e));
-    }
+    } finally { setBusy(false); }
   };
 
   const dismiss = (permanently) => {
-    if (permanently) localStorage.setItem(K_DRIVE_DISMISSED, '1');
+    if (permanently) localStorage.setItem('sjm1:gh:setupDismissed', '1');
     onClose();
   };
 
   if (!open) return null;
 
   return (
-    <Modal open onClose={() => dismiss(false)} title="Sync to Google Drive" maxWidth="max-w-2xl">
-      {isFile && (
-        <div className="bg-crimson-500/10 ring-1 ring-crimson-500/30 text-crimson-500 rounded-md px-3 py-2.5 text-xs mb-4">
-          <div className="font-semibold mb-1">⚠ Drive sync is unavailable when opened as a local file</div>
-          <div className="text-ink-soft">You opened this app via <code className="bg-ivory-warm px-1 rounded">file://</code>. Google OAuth refuses local-file origins for security. To enable Drive sync, host this HTML file on any web server (GitHub Pages, Netlify Drop, Cloudflare Pages — all free) or run a local server (e.g. <code className="bg-ivory-warm px-1 rounded">python -m http.server 8000</code> then open <code className="bg-ivory-warm px-1 rounded">http://localhost:8000</code>). You can keep using the app with browser-only storage for now.</div>
-        </div>
-      )}
-
+    <Modal open onClose={() => dismiss(false)} title="Sync to GitHub" maxWidth="max-w-2xl">
       {step === 'intro' && (
         <div className="space-y-4 text-sm">
-          <div>
-            <p className="text-ink-soft">Keep the society's data automatically backed up on the treasurer's Google Drive — so it survives device changes, browser resets, and is accessible from any computer.</p>
-          </div>
+          <p className="text-ink-soft">Back up the society's data automatically to a GitHub repository. Every change auto-commits within a few seconds, with full version history. Open the app from any device — pull the latest state instantly.</p>
 
-          <div className="bg-ivory-deep/40 ring-soft rounded-lg p-4 space-y-2 text-[13px]">
+          <div className="bg-ivory-deep/50 ring-soft rounded-lg p-4 space-y-2">
             <div className="font-display text-base text-teal-500">How it works</div>
-            <ul className="space-y-1.5 text-ink-soft list-disc pl-5">
-              <li>Three JSON files (<span className="font-mono text-xs">flats</span>, <span className="font-mono text-xs">payments</span>, <span className="font-mono text-xs">config</span>) live in a folder called <span className="font-mono text-xs">{DRIVE_FOLDER_NAME}</span> in the treasurer's Drive.</li>
-              <li>Every change in the app pushes to Drive automatically within a few seconds.</li>
-              <li>Open the app on any device using the treasurer's Google account — it pulls the latest data on load.</li>
-              <li>Only this app sees these files (it uses the <span className="font-mono text-xs">drive.file</span> scope).</li>
+            <ul className="space-y-1.5 text-ink-soft list-disc pl-5 text-[13px]">
+              <li>A single file <code className="font-mono text-xs bg-ivory-warm px-1 rounded">data.json</code> in your repo holds all flats, payments, expenses, and staff data.</li>
+              <li>Every change auto-commits within 2.5 seconds with a timestamp.</li>
+              <li>Full audit trail: every payment is a git commit you can review.</li>
+              <li><span className="font-semibold text-clay-600">Recommendation:</span> Use a private repo for the data file to keep society information confidential.</li>
             </ul>
           </div>
 
           <div className="bg-clay-500/10 ring-1 ring-clay-500/20 rounded-lg p-4 text-[13px]">
-            <div className="font-medium text-clay-500 mb-1">One-time setup needed</div>
-            <p className="text-ink-soft">Google requires a free OAuth Client ID, created in the treasurer's Google Cloud Console. Takes about 10 minutes the first time. The app will guide you through it.</p>
+            <div className="font-semibold text-clay-600 mb-1">One-time setup (~3 minutes)</div>
+            <p className="text-ink-soft">You need a fine-grained Personal Access Token from GitHub. The wizard walks you through it.</p>
           </div>
 
           <div className="flex flex-wrap gap-2 justify-end pt-2">
             <Button variant="ghost" onClick={() => dismiss(true)}>Don't ask again</Button>
             <Button variant="ghost" onClick={() => dismiss(false)}>Maybe later</Button>
-            <Button onClick={() => setStep('instructions')} disabled={isFile}>{drive.isConfigured() ? 'Reconnect' : 'Set up Drive sync'}</Button>
+            <Button onClick={() => setStep('instructions')}>{github.isConfigured() ? 'Reconfigure' : 'Set up GitHub sync'}</Button>
           </div>
         </div>
       )}
 
       {step === 'instructions' && (
         <div className="space-y-4 text-sm">
-          <div className="text-ink-soft">Follow these steps in a new tab. When you finish, paste the <em>Client ID</em> here.</div>
-
           <ol className="space-y-3 text-[13px]">
             <li className="flex gap-3">
-              <span className="shrink-0 w-6 h-6 rounded-full bg-teal-500 text-ivory-warm flex items-center justify-center text-xs font-bold">1</span>
+              <span className="shrink-0 w-7 h-7 rounded-full bg-teal-500 text-ivory-warm flex items-center justify-center text-xs font-bold">1</span>
               <div className="flex-1">
-                Open <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-teal-500 underline">console.cloud.google.com</a> and create a new project (any name, e.g. "Society Maintenance").
+                <div className="font-medium text-ink mb-1">Create a private repo for the data</div>
+                <div className="text-ink-soft">Go to <a href="https://github.com/new" target="_blank" rel="noopener noreferrer" className="text-teal-500 underline font-medium">github.com/new</a>, name it something like <code className="font-mono text-xs bg-ivory-deep px-1 rounded">sushmajoynest-data</code>, choose <span className="font-semibold">Private</span>, click <span className="font-semibold">Create repository</span>. Skip adding a README — keep it empty.</div>
               </div>
             </li>
             <li className="flex gap-3">
-              <span className="shrink-0 w-6 h-6 rounded-full bg-teal-500 text-ivory-warm flex items-center justify-center text-xs font-bold">2</span>
+              <span className="shrink-0 w-7 h-7 rounded-full bg-teal-500 text-ivory-warm flex items-center justify-center text-xs font-bold">2</span>
               <div className="flex-1">
-                In the left menu, go to <span className="font-medium">APIs &amp; Services → Library</span>. Search for <span className="font-medium">Google Drive API</span> and click <span className="font-medium">Enable</span>.
+                <div className="font-medium text-ink mb-1">Generate a fine-grained Personal Access Token</div>
+                <div className="text-ink-soft">Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer" className="text-teal-500 underline font-medium">github.com/settings/personal-access-tokens/new</a>. Fill in:</div>
+                <ul className="mt-1.5 ml-4 list-disc space-y-0.5 text-[12px] text-ink-soft">
+                  <li><span className="font-semibold">Token name:</span> Sushma Maintenance App</li>
+                  <li><span className="font-semibold">Expiration:</span> 1 year (or "No expiration" if your org allows)</li>
+                  <li><span className="font-semibold">Repository access:</span> Only select repositories → pick the data repo you just made</li>
+                  <li><span className="font-semibold">Permissions → Repository permissions:</span> <span className="font-mono text-[11px] bg-ivory-deep px-1 rounded">Contents</span> → <span className="font-mono text-[11px] bg-ivory-deep px-1 rounded">Read and write</span></li>
+                </ul>
+                <div className="text-ink-soft mt-1.5">Click <span className="font-semibold">Generate token</span> at the bottom. Copy the token immediately (starts with <code className="font-mono text-[11px]">github_pat_</code>) — GitHub only shows it once.</div>
               </div>
             </li>
             <li className="flex gap-3">
-              <span className="shrink-0 w-6 h-6 rounded-full bg-teal-500 text-ivory-warm flex items-center justify-center text-xs font-bold">3</span>
+              <span className="shrink-0 w-7 h-7 rounded-full bg-teal-500 text-ivory-warm flex items-center justify-center text-xs font-bold">3</span>
               <div className="flex-1">
-                Go to <span className="font-medium">APIs &amp; Services → OAuth consent screen</span>. Choose <span className="font-medium">External</span> user type. Fill the App name (e.g. "Society Maintenance"), your email as User support email, and your email under Developer contact. On the <span className="font-medium">Scopes</span> screen, click <span className="font-medium">Add or Remove Scopes</span> and select <code className="font-mono text-[11px] bg-ivory-deep px-1 rounded">.../auth/drive.file</code>, <code className="font-mono text-[11px] bg-ivory-deep px-1 rounded">.../auth/userinfo.email</code>, <code className="font-mono text-[11px] bg-ivory-deep px-1 rounded">.../auth/userinfo.profile</code>. Save. On the <span className="font-medium">Test users</span> step, add the treasurer's Gmail and any other committee member's Gmail. (App will stay in "Testing" mode — that's fine for &lt;100 users.)
-              </div>
-            </li>
-            <li className="flex gap-3">
-              <span className="shrink-0 w-6 h-6 rounded-full bg-teal-500 text-ivory-warm flex items-center justify-center text-xs font-bold">4</span>
-              <div className="flex-1">
-                Go to <span className="font-medium">APIs &amp; Services → Credentials</span>. Click <span className="font-medium">Create Credentials → OAuth client ID</span>.
-                Application type: <span className="font-medium">Web application</span>. Under <span className="font-medium">Authorized JavaScript origins</span>, click <span className="font-medium">Add URI</span> and paste this exactly:
-                <div className="mt-1.5 flex items-center gap-2">
-                  <code className="font-mono text-xs bg-ivory-deep rounded px-2 py-1 ring-soft flex-1 break-all">{origin}</code>
-                  <Button size="sm" variant="soft" onClick={() => copy(origin)}>Copy</Button>
-                </div>
-                <div className="text-[11px] text-ink-muted mt-1">{isFile ? '⚠ You will not be able to add file:// here — host the app first.' : 'This is the URL of this page. Google will only allow OAuth from this origin.'}</div>
-              </div>
-            </li>
-            <li className="flex gap-3">
-              <span className="shrink-0 w-6 h-6 rounded-full bg-teal-500 text-ivory-warm flex items-center justify-center text-xs font-bold">5</span>
-              <div className="flex-1">
-                Click <span className="font-medium">Create</span>. Copy the <span className="font-medium">Client ID</span> (looks like <span className="font-mono text-[11px]">12345-abc.apps.googleusercontent.com</span>) and paste it below:
-                <input
-                  type="text"
-                  value={clientId}
-                  onChange={e => setClientId(e.target.value)}
-                  placeholder="paste Client ID here"
-                  className="w-full mt-2 px-3 py-2 bg-ivory-warm ring-soft rounded-md text-xs font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/50"
-                />
+                <div className="font-medium text-ink mb-1">Fill in the details below</div>
               </div>
             </li>
           </ol>
 
+          <div className="bg-ivory-deep/50 ring-soft rounded-lg p-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="GitHub username (owner)" className="col-span-2">
+                <Input value={owner} onChange={e => setOwner(e.target.value)} placeholder="e.g. sharikwani" />
+              </Field>
+              <Field label="Repository name">
+                <Input value={repo} onChange={e => setRepo(e.target.value)} placeholder="e.g. sushmajoynest-data" />
+              </Field>
+              <Field label="Branch" hint="usually 'main'">
+                <Input value={branch} onChange={e => setBranch(e.target.value)} placeholder="main" />
+              </Field>
+              <Field label="Data file path" hint="usually data.json" className="col-span-2">
+                <Input value={path} onChange={e => setPath(e.target.value)} placeholder="data.json" />
+              </Field>
+              <Field label="Personal Access Token (PAT)" hint="kept only in this browser; never sent anywhere except api.github.com" className="col-span-2">
+                <Input type="password" value={token} onChange={e => setToken(e.target.value)} placeholder="github_pat_..." className="font-mono text-xs" />
+              </Field>
+            </div>
+          </div>
+
           {hasLocalData && (
-            <div className="text-[12px] bg-teal-500/10 ring-1 ring-teal-500/20 text-ink-soft rounded-md px-3 py-2">
-              <span className="font-medium text-teal-500">Note:</span> You already have local data on this device. After connecting, the app will <span className="font-medium">upload your local data to Drive</span> the first time. (If you already have data on Drive from another device, use <span className="font-medium">Settings → Pull from Drive</span> after connecting to overwrite local.)
+            <div className="text-[12px] bg-teal-500/10 ring-1 ring-teal-500/30 text-ink-soft rounded-md px-3 py-2">
+              <span className="font-semibold text-teal-600">Note:</span> You already have local data on this device. After connecting, the app will <span className="font-semibold">upload your local data to GitHub</span> the first time. (If you already have data on GitHub from another device, use <span className="font-semibold">Settings → Pull from GitHub</span> after connecting to overwrite local.)
             </div>
           )}
 
-          <div className="text-[12px] bg-clay-500/10 ring-1 ring-clay-500/20 text-ink-soft rounded-md px-3 py-2">
-            <span className="font-medium text-clay-500">During sign-in</span>, Google will show "Google hasn't verified this app" — that's expected because the app is in Testing mode. Click <span className="font-medium">Advanced → Go to {`{app name}`} (unsafe)</span>. This warning only applies to apps not vetted by Google publicly — your data stays in your own Drive folder.
-          </div>
-
-          {error && <div className="text-xs bg-crimson-500/10 ring-1 ring-crimson-500/30 text-crimson-500 rounded-md px-3 py-2">{error}</div>}
+          {error && <div className="text-xs bg-crimson-500/10 ring-1 ring-crimson-500/30 text-crimson-600 rounded-md px-3 py-2 font-medium">{error}</div>}
 
           <div className="flex flex-wrap gap-2 justify-between pt-2">
             <Button variant="ghost" onClick={() => setStep('intro')}>← Back</Button>
-            <Button onClick={connect} disabled={busy || isFile}>
-              {busy ? 'Connecting…' : 'Connect to Google Drive'}
+            <Button onClick={connect} disabled={busy}>
+              {busy ? 'Connecting…' : 'Connect to GitHub'}
             </Button>
           </div>
         </div>
       )}
     </Modal>
+  );
+}
+
+/* ===========================================================
+   LOGIN / SET PASSWORD
+   =========================================================== */
+
+function SetPasswordModal({ open, onSet, onSkip }) {
+  const [p1, setP1] = useState('');
+  const [p2, setP2] = useState('');
+  const [err, setErr] = useState('');
+  const submit = async () => {
+    if (p1.length < 6) { setErr('Password must be at least 6 characters'); return; }
+    if (p1 !== p2) { setErr('Passwords do not match'); return; }
+    const hash = await sha256Hex(p1);
+    onSet(hash);
+  };
+  if (!open) return null;
+  return (
+    <Modal open onClose={() => {}} title="Protect this portal" maxWidth="max-w-md">
+      <div className="space-y-4 text-sm">
+        <p className="text-ink-soft">Set a passphrase that the treasurer (and other committee members with access) will use to open the portal. This adds a second layer of protection on top of the GitHub token.</p>
+        <Field label="New passphrase"><Input type="password" value={p1} onChange={e => setP1(e.target.value)} placeholder="At least 6 characters" autoFocus /></Field>
+        <Field label="Confirm passphrase"><Input type="password" value={p2} onChange={e => setP2(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} /></Field>
+        {err && <div className="text-xs text-crimson-600 bg-crimson-500/10 rounded px-3 py-2 ring-1 ring-crimson-500/30 font-medium">{err}</div>}
+        <div className="flex justify-between pt-1">
+          <Button variant="ghost" onClick={onSkip}>Skip for now</Button>
+          <Button onClick={submit}><Icon name="lock" /> Set passphrase</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function LoginGate({ storedHash, society, onUnlock, onReset }) {
+  const [pw, setPw] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    setBusy(true);
+    const h = await sha256Hex(pw);
+    if (h === storedHash) {
+      auth.startSession();
+      onUnlock();
+    } else {
+      setErr('Incorrect passphrase');
+    }
+    setBusy(false);
+  };
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4 grain">
+      <div className="bg-ivory-warm rounded-2xl ring-soft p-8 w-full max-w-sm shadow-xl">
+        <div className="text-center mb-6">
+          <div className="text-[10px] tracking-[0.3em] uppercase text-clay-500 mb-2">A/RWA Treasury</div>
+          <div className="font-display text-2xl text-teal-500 leading-tight">{society || 'Sushma Joynest Moh 1'}</div>
+          <div className="text-xs text-ink-muted mt-1">Maintenance Portal</div>
+        </div>
+        <Field label="Passphrase">
+          <Input
+            type="password"
+            value={pw}
+            onChange={e => { setPw(e.target.value); setErr(''); }}
+            onKeyDown={e => e.key === 'Enter' && submit()}
+            autoFocus
+            placeholder="Enter passphrase"
+          />
+        </Field>
+        {err && <div className="text-xs text-crimson-600 bg-crimson-500/10 rounded px-3 py-2 ring-1 ring-crimson-500/30 mt-3 font-medium">{err}</div>}
+        <Button onClick={submit} disabled={busy || !pw} className="w-full mt-4">
+          <Icon name="lock" /> {busy ? 'Verifying…' : 'Unlock'}
+        </Button>
+        {onReset && (
+          <div className="text-center mt-4">
+            <button onClick={onReset} className="text-[11px] text-ink-muted hover:text-crimson-500">Forgot passphrase? Reset everything</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ===========================================================
+   STAFF & SALARIES
+   =========================================================== */
+
+const STAFF_ROLES = [
+  'Security Guard', 'Head Security', 'Gardener', 'Cleaner / Sweeper', 'Housekeeping',
+  'Maid', 'Plumber', 'Electrician', 'Lift Operator', 'Supervisor',
+  'Office Staff', 'Accountant', 'Other',
+];
+
+function StaffModal({ open, staff, onSave, onClose }) {
+  const [s, setS] = useState(() => staff || {
+    id: '', name: '', role: 'Security Guard', phone: '',
+    joining_date: todayISO(), monthly_salary: 0, is_active: true, notes: '',
+  });
+  useEffect(() => { if (staff) setS(staff); }, [staff]);
+  if (!open) return null;
+  const save = () => {
+    if (!s.name.trim()) { alert('Name is required'); return; }
+    if (!s.monthly_salary || s.monthly_salary <= 0) { alert('Monthly salary must be positive'); return; }
+    onSave({ ...s, id: s.id || uid(), updated_at: nowISO() });
+  };
+  return (
+    <Modal open onClose={onClose} title={s.id ? `Edit ${s.name}` : 'Add Staff Member'} maxWidth="max-w-xl"
+      footer={<>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button onClick={save}>Save</Button>
+      </>}>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Full name" className="col-span-2">
+          <Input value={s.name} onChange={e => setS({...s, name: e.target.value})} placeholder="e.g. Ramesh Kumar" />
+        </Field>
+        <Field label="Role">
+          <Select value={s.role} onChange={e => setS({...s, role: e.target.value})}>
+            {STAFF_ROLES.map(r => <option key={r}>{r}</option>)}
+          </Select>
+        </Field>
+        <Field label="Phone">
+          <Input value={s.phone} onChange={e => setS({...s, phone: e.target.value})} placeholder="10-digit" />
+        </Field>
+        <Field label="Joining date">
+          <Input type="date" value={s.joining_date} onChange={e => setS({...s, joining_date: e.target.value})} />
+        </Field>
+        <Field label="Monthly salary (₹)">
+          <Input type="number" value={s.monthly_salary} onChange={e => setS({...s, monthly_salary: Number(e.target.value) || 0})} />
+        </Field>
+        <Field label="Status" className="col-span-2">
+          <Select value={s.is_active ? 'active' : 'inactive'} onChange={e => setS({...s, is_active: e.target.value === 'active'})}>
+            <option value="active">Active (currently employed)</option>
+            <option value="inactive">Inactive (left employment)</option>
+          </Select>
+        </Field>
+        <Field label="Notes / address" className="col-span-2">
+          <Textarea rows={2} value={s.notes} onChange={e => setS({...s, notes: e.target.value})} placeholder="Any internal notes, address, bank details, etc." />
+        </Field>
+      </div>
+    </Modal>
+  );
+}
+
+function PaySalaryModal({ open, staff, period, expenses, onPay, onClose }) {
+  const [payment, setPayment] = useState({
+    period: period,
+    paid_on: todayISO(),
+    amount: staff?.monthly_salary || 0,
+    mode: 'Bank Transfer',
+    reference_no: '',
+    notes: '',
+  });
+  useEffect(() => {
+    if (open && staff) setPayment(p => ({ ...p, amount: staff.monthly_salary, period }));
+  }, [open, staff, period]);
+
+  if (!open || !staff) return null;
+
+  // Already paid for this period?
+  const alreadyPaid = expenses.some(e =>
+    e.staff_id === staff.id && e.period === payment.period && e.category === 'Staff Salary'
+  );
+
+  const submit = () => {
+    if (!payment.amount || payment.amount <= 0) { alert('Amount must be positive'); return; }
+    onPay({
+      id: uid(),
+      date: payment.paid_on,
+      category: 'Staff Salary',
+      subcategory: staff.role,
+      staff_id: staff.id,
+      payee_name: staff.name,
+      amount: Number(payment.amount),
+      mode: payment.mode,
+      reference_no: payment.reference_no,
+      notes: payment.notes,
+      period: payment.period,
+      recorded_at: nowISO(),
+    });
+  };
+
+  return (
+    <Modal open onClose={onClose} title={`Pay salary — ${staff.name}`} maxWidth="max-w-lg"
+      footer={<>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button onClick={submit}>Record Payment</Button>
+      </>}>
+      <div className="bg-teal-50/60 ring-soft rounded-lg p-3 mb-4 text-sm">
+        <div className="font-medium text-ink">{staff.name} · <span className="text-ink-soft">{staff.role}</span></div>
+        <div className="text-[12px] text-ink-soft mt-0.5">Monthly: <span className="font-mono font-semibold">{inr(staff.monthly_salary)}</span></div>
+      </div>
+      {alreadyPaid && (
+        <div className="bg-clay-500/10 ring-1 ring-clay-500/30 text-clay-500 rounded-md px-3 py-2 text-xs mb-3">
+          ⚠ Salary already recorded for {periodLabel(payment.period)}. Recording another payment will create a duplicate entry.
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="For month">
+          <Input type="month" value={payment.period} onChange={e => setPayment({...payment, period: e.target.value})} />
+        </Field>
+        <Field label="Paid on">
+          <Input type="date" value={payment.paid_on} onChange={e => setPayment({...payment, paid_on: e.target.value})} />
+        </Field>
+        <Field label="Amount (₹)">
+          <Input type="number" value={payment.amount} onChange={e => setPayment({...payment, amount: Number(e.target.value) || 0})} />
+        </Field>
+        <Field label="Mode">
+          <Select value={payment.mode} onChange={e => setPayment({...payment, mode: e.target.value})}>
+            <option>Cash</option><option>Bank Transfer</option><option>UPI</option><option>Cheque</option>
+          </Select>
+        </Field>
+        <Field label="Reference / UTR" className="col-span-2">
+          <Input value={payment.reference_no} onChange={e => setPayment({...payment, reference_no: e.target.value})} placeholder="Transaction ID or cheque no." />
+        </Field>
+        <Field label="Notes" className="col-span-2">
+          <Textarea rows={2} value={payment.notes} onChange={e => setPayment({...payment, notes: e.target.value})} />
+        </Field>
+      </div>
+    </Modal>
+  );
+}
+
+function StaffView({ staff, addStaff, updateStaff, deleteStaff, expenses, addExpense, currentPeriod, toast }) {
+  const [editingStaff, setEditingStaff] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [payingSalary, setPayingSalary] = useState(null);
+  const [filter, setFilter] = useState({ role: 'all', status: 'active', q: '' });
+
+  const filtered = useMemo(() => {
+    const q = filter.q.toLowerCase().trim();
+    return staff.filter(s => {
+      if (filter.role !== 'all' && s.role !== filter.role) return false;
+      if (filter.status === 'active' && !s.is_active) return false;
+      if (filter.status === 'inactive' && s.is_active) return false;
+      if (q && !`${s.name} ${s.phone} ${s.notes}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [staff, filter]);
+
+  const activeStaff = staff.filter(s => s.is_active);
+  const totalMonthlyCommitment = activeStaff.reduce((sum, s) => sum + (s.monthly_salary || 0), 0);
+
+  // Salary paid status per staff for current period
+  const salaryPaid = useMemo(() => {
+    const m = {};
+    expenses.forEach(e => {
+      if (e.category === 'Staff Salary' && e.period === currentPeriod && e.staff_id) {
+        m[e.staff_id] = (m[e.staff_id] || 0) + e.amount;
+      }
+    });
+    return m;
+  }, [expenses, currentPeriod]);
+
+  const handleSaveStaff = (s) => {
+    if (s.id && staff.some(x => x.id === s.id)) {
+      updateStaff(s.id, s);
+      toast('Staff updated', 'success');
+    } else {
+      addStaff(s);
+      toast('Staff added', 'success');
+    }
+    setEditingStaff(null);
+    setShowAddModal(false);
+  };
+
+  const handlePaySalary = (expense) => {
+    addExpense(expense);
+    setPayingSalary(null);
+    toast(`Salary of ${inr(expense.amount)} recorded for ${expense.payee_name}`, 'success');
+  };
+
+  const handleDelete = (s) => {
+    if (!confirm(`Remove ${s.name} from staff list? This won't delete past salary records.`)) return;
+    deleteStaff(s.id);
+    toast('Staff removed', 'success');
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.2em] text-clay-500 font-semibold mb-1">People</div>
+          <h1 className="font-display text-4xl text-ink leading-none">Staff &amp; Salaries</h1>
+          <p className="text-sm text-ink-soft mt-1.5">
+            {activeStaff.length} active · monthly commitment <span className="font-mono font-semibold text-ink">{inr(totalMonthlyCommitment)}</span>
+          </p>
+        </div>
+        <Button onClick={() => { setEditingStaff(null); setShowAddModal(true); }}>
+          <Icon name="plus" /> Add Staff
+        </Button>
+      </div>
+
+      <div className="bg-ivory-warm rounded-xl ring-soft p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="md:col-span-2 relative">
+          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted w-4 h-4" />
+          <input value={filter.q} onChange={e => setFilter({...filter, q: e.target.value})} placeholder="Search name, phone…" className="w-full pl-9 pr-3 py-2 bg-ivory-deep/40 ring-soft rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50" />
+        </div>
+        <Select value={filter.role} onChange={e => setFilter({...filter, role: e.target.value})}>
+          <option value="all">All roles</option>
+          {STAFF_ROLES.map(r => <option key={r}>{r}</option>)}
+        </Select>
+        <Select value={filter.status} onChange={e => setFilter({...filter, status: e.target.value})}>
+          <option value="active">Active only</option>
+          <option value="inactive">Inactive only</option>
+          <option value="all">All staff</option>
+        </Select>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="bg-ivory-warm rounded-xl ring-soft p-10 text-center text-ink-soft">
+          <Icon name="users" className="w-10 h-10 mx-auto mb-3 opacity-40" />
+          <div className="font-display text-lg text-ink mb-1">No staff added yet</div>
+          <div className="text-sm">Add security guards, gardeners, cleaners and other staff to track salaries.</div>
+          <Button className="mt-4" onClick={() => { setEditingStaff(null); setShowAddModal(true); }}><Icon name="plus" /> Add first staff member</Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filtered.map(s => {
+            const paidThisMonth = (salaryPaid[s.id] || 0) >= s.monthly_salary;
+            return (
+              <div key={s.id} className={`bg-ivory-warm rounded-xl ring-soft p-4 ${!s.is_active ? 'opacity-60' : ''}`}>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-ink truncate">{s.name}</div>
+                    <div className="text-[12px] text-ink-soft truncate">{s.role}</div>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => { setEditingStaff(s); setShowAddModal(true); }} className="p-1.5 rounded hover:bg-ivory-deep text-ink-muted hover:text-teal-500" title="Edit">
+                      <Icon name="edit" />
+                    </button>
+                    <button onClick={() => handleDelete(s)} className="p-1.5 rounded hover:bg-crimson-500/10 text-ink-muted hover:text-crimson-500" title="Remove">
+                      <Icon name="trash" />
+                    </button>
+                  </div>
+                </div>
+                <div className="text-xs text-ink-soft space-y-0.5 mb-3">
+                  {s.phone && <div className="flex items-center gap-1.5"><Icon name="phone" className="w-3 h-3" /> {s.phone}</div>}
+                  {s.joining_date && <div className="flex items-center gap-1.5"><Icon name="calendar" className="w-3 h-3" /> Since {s.joining_date}</div>}
+                </div>
+                <div className="bg-ivory-deep/40 rounded p-2.5 mb-3">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-[10px] uppercase tracking-wider text-ink-muted font-semibold">Monthly</span>
+                    <span className="font-mono font-bold text-teal-500 tabular">{inr(s.monthly_salary)}</span>
+                  </div>
+                </div>
+                {s.is_active && (
+                  paidThisMonth ? (
+                    <div className="text-[12px] flex items-center gap-1.5 text-moss-500 font-semibold">
+                      <Icon name="check" className="w-3.5 h-3.5" /> Paid for {periodLabel(currentPeriod)}
+                    </div>
+                  ) : (
+                    <Button size="sm" className="w-full" onClick={() => setPayingSalary(s)}>
+                      <Icon name="rupee" /> Pay {periodLabel(currentPeriod)}
+                    </Button>
+                  )
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <StaffModal open={showAddModal} staff={editingStaff} onSave={handleSaveStaff} onClose={() => { setShowAddModal(false); setEditingStaff(null); }} />
+      <PaySalaryModal open={!!payingSalary} staff={payingSalary} period={currentPeriod} expenses={expenses} onPay={handlePaySalary} onClose={() => setPayingSalary(null)} />
+    </div>
+  );
+}
+
+/* ===========================================================
+   EXPENSES
+   =========================================================== */
+
+const EXPENSE_CATEGORIES = [
+  { value: 'Staff Salary',     icon: '👤', tone: 'teal'    },
+  { value: 'Security',         icon: '🛡️', tone: 'teal'   },
+  { value: 'Housekeeping',     icon: '🧹', tone: 'moss'   },
+  { value: 'Gardening',        icon: '🌿', tone: 'moss'   },
+  { value: 'Repairs',          icon: '🔧', tone: 'clay'   },
+  { value: 'Renovation',       icon: '🏗️', tone: 'clay'   },
+  { value: 'Painting',         icon: '🎨', tone: 'clay'   },
+  { value: 'Electricity',      icon: '⚡', tone: 'amber'   },
+  { value: 'Water',            icon: '💧', tone: 'teal'   },
+  { value: 'Lift Maintenance', icon: '🛗', tone: 'teal'   },
+  { value: 'Pest Control',     icon: '🐛', tone: 'moss'   },
+  { value: 'Meeting / Events', icon: '🎉', tone: 'clay'   },
+  { value: 'Office / Admin',   icon: '📋', tone: 'teal'   },
+  { value: 'Audit / Legal',    icon: '⚖️', tone: 'clay'   },
+  { value: 'Insurance',        icon: '🛡️', tone: 'teal'   },
+  { value: 'Property Tax',     icon: '🏛️', tone: 'crimson' },
+  { value: 'Lighting',         icon: '💡', tone: 'amber'   },
+  { value: 'CCTV / Equipment', icon: '📹', tone: 'teal'   },
+  { value: 'Garbage Disposal', icon: '🗑️', tone: 'moss'   },
+  { value: 'Other',            icon: '📦', tone: 'clay'   },
+];
+
+function ExpenseModal({ open, expense, staff, currentPeriod, onSave, onClose }) {
+  const [e, setE] = useState(() => expense || {
+    id: '', date: todayISO(),
+    category: 'Repairs', subcategory: '', payee_name: '', staff_id: null,
+    amount: 0, mode: 'Cash', reference_no: '', notes: '',
+    period: currentPeriod,
+  });
+  useEffect(() => {
+    if (expense) setE(expense);
+    else setE({
+      id: '', date: todayISO(),
+      category: 'Repairs', subcategory: '', payee_name: '', staff_id: null,
+      amount: 0, mode: 'Cash', reference_no: '', notes: '',
+      period: currentPeriod,
+    });
+  }, [expense, currentPeriod, open]);
+
+  if (!open) return null;
+  const isSalary = e.category === 'Staff Salary';
+
+  const save = () => {
+    if (!e.amount || e.amount <= 0) { alert('Amount must be positive'); return; }
+    if (!e.category) { alert('Pick a category'); return; }
+    if (!isSalary && !e.payee_name.trim()) { alert('Payee name is required'); return; }
+    onSave({ ...e, id: e.id || uid(), amount: Number(e.amount), recorded_at: nowISO() });
+  };
+
+  return (
+    <Modal open onClose={onClose} title={e.id ? 'Edit Expense' : 'Add Expense'} maxWidth="max-w-xl"
+      footer={<>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button onClick={save}>Save Expense</Button>
+      </>}>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Category">
+          <Select value={e.category} onChange={ev => setE({...e, category: ev.target.value, staff_id: ev.target.value === 'Staff Salary' ? e.staff_id : null})}>
+            {EXPENSE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.icon} {c.value}</option>)}
+          </Select>
+        </Field>
+        <Field label="Date">
+          <Input type="date" value={e.date} onChange={ev => setE({...e, date: ev.target.value})} />
+        </Field>
+
+        {isSalary ? (
+          <Field label="Staff member" className="col-span-2">
+            <Select value={e.staff_id || ''} onChange={ev => {
+              const s = staff.find(x => x.id === ev.target.value);
+              setE({...e, staff_id: ev.target.value, payee_name: s?.name || '', subcategory: s?.role || ''});
+            }}>
+              <option value="">— Pick staff —</option>
+              {staff.filter(s => s.is_active).map(s => (
+                <option key={s.id} value={s.id}>{s.name} ({s.role}) · {inr(s.monthly_salary)}/mo</option>
+              ))}
+            </Select>
+          </Field>
+        ) : (
+          <Field label="Payee / Vendor name" className="col-span-2">
+            <Input value={e.payee_name} onChange={ev => setE({...e, payee_name: ev.target.value})} placeholder="e.g. ABC Paints, Mr. Singh Electrician" />
+          </Field>
+        )}
+
+        <Field label="Description / Subcategory" className="col-span-2" hint="Brief description of what this expense is for">
+          <Input value={e.subcategory} onChange={ev => setE({...e, subcategory: ev.target.value})} placeholder="e.g. B-tower lobby repainting, July water bill" />
+        </Field>
+
+        <Field label="Amount (₹)">
+          <Input type="number" value={e.amount} onChange={ev => setE({...e, amount: Number(ev.target.value) || 0})} />
+        </Field>
+        <Field label="Mode">
+          <Select value={e.mode} onChange={ev => setE({...e, mode: ev.target.value})}>
+            <option>Cash</option><option>Bank Transfer</option><option>UPI</option><option>Cheque</option><option>Card</option>
+          </Select>
+        </Field>
+        <Field label="For month (period)" hint="The month this expense relates to">
+          <Input type="month" value={e.period || ''} onChange={ev => setE({...e, period: ev.target.value})} />
+        </Field>
+        <Field label="Reference / Bill / UTR">
+          <Input value={e.reference_no} onChange={ev => setE({...e, reference_no: ev.target.value})} placeholder="Optional" />
+        </Field>
+        <Field label="Notes" className="col-span-2">
+          <Textarea rows={2} value={e.notes} onChange={ev => setE({...e, notes: ev.target.value})} placeholder="Any details, bill location, approvals, etc." />
+        </Field>
+      </div>
+    </Modal>
+  );
+}
+
+function ExpensesView({ expenses, addExpense, updateExpense, deleteExpense, staff, currentPeriod, toast }) {
+  const [editing, setEditing] = useState(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [filter, setFilter] = useState({ period: currentPeriod, category: 'all', mode: 'all', q: '', scope: 'month' });
+  const [page, setPage] = useState(0);
+  const PAGE = 50;
+
+  const filtered = useMemo(() => {
+    const q = filter.q.toLowerCase().trim();
+    return [...expenses]
+      .filter(e => {
+        if (filter.scope === 'month' && e.period !== filter.period) return false;
+        if (filter.scope === 'year') {
+          const y = filter.period.slice(0, 4);
+          if (!e.period?.startsWith(y) && !e.date?.startsWith(y)) return false;
+        }
+        if (filter.category !== 'all' && e.category !== filter.category) return false;
+        if (filter.mode !== 'all' && e.mode !== filter.mode) return false;
+        if (q) {
+          const hay = `${e.category} ${e.subcategory} ${e.payee_name} ${e.notes} ${e.reference_no}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  }, [expenses, filter]);
+
+  useEffect(() => { setPage(0); }, [filter]);
+  const slice = filtered.slice(page * PAGE, page * PAGE + PAGE);
+
+  const totals = useMemo(() => {
+    const byCategory = {};
+    let total = 0;
+    filtered.forEach(e => {
+      byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
+      total += e.amount;
+    });
+    return { total, byCategory };
+  }, [filtered]);
+
+  const handleSave = (e) => {
+    if (e.id && expenses.some(x => x.id === e.id)) {
+      updateExpense(e.id, e);
+      toast('Expense updated', 'success');
+    } else {
+      addExpense(e);
+      toast(`Expense of ${inr(e.amount)} recorded`, 'success');
+    }
+    setEditing(null);
+    setShowAdd(false);
+  };
+
+  const handleDelete = (e) => {
+    if (!confirm(`Delete this ${e.category} expense of ${inr(e.amount)}?`)) return;
+    deleteExpense(e.id);
+    toast('Expense deleted', 'success');
+  };
+
+  const exportCSV = () => {
+    const rows = filtered.map(e => ({
+      date: e.date, category: e.category, subcategory: e.subcategory || '',
+      payee: e.payee_name || '', amount: e.amount, mode: e.mode,
+      reference: e.reference_no || '', period: e.period || '', notes: e.notes || '',
+    }));
+    download(`expenses-${todayISO()}.csv`, toCSV(rows), 'text/csv');
+    toast(`Exported ${rows.length} expenses`, 'success');
+  };
+
+  const periodLabelText = filter.scope === 'year' ? filter.period.slice(0, 4)
+    : filter.scope === 'all' ? 'all time' : periodLabel(filter.period);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.2em] text-clay-500 font-semibold mb-1">Money Out</div>
+          <h1 className="font-display text-4xl text-ink leading-none">Expenses</h1>
+          <p className="text-sm text-ink-soft mt-1.5">
+            {filtered.length} entries · <span className="font-mono font-bold text-crimson-500">{inr(totals.total)}</span> spent in {periodLabelText}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportCSV}><Icon name="download" /> Export CSV</Button>
+          <Button onClick={() => { setEditing(null); setShowAdd(true); }}><Icon name="plus" /> Add Expense</Button>
+        </div>
+      </div>
+
+      {/* Category summary cards */}
+      {filtered.length > 0 && (
+        <div className="bg-ivory-warm rounded-xl ring-soft p-4">
+          <div className="text-[11px] uppercase tracking-wider text-ink-soft font-semibold mb-3">Breakdown — {periodLabelText}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+            {Object.entries(totals.byCategory).sort((a,b) => b[1]-a[1]).map(([cat, amt]) => {
+              const meta = EXPENSE_CATEGORIES.find(c => c.value === cat);
+              const pct = totals.total > 0 ? (amt / totals.total) * 100 : 0;
+              return (
+                <div key={cat} className="bg-ivory-deep/40 rounded-lg p-3 ring-soft">
+                  <div className="text-base mb-0.5">{meta?.icon || '📦'}</div>
+                  <div className="text-[11px] text-ink-soft font-medium truncate" title={cat}>{cat}</div>
+                  <div className="font-mono font-bold text-ink tabular text-sm mt-1">{inr(amt)}</div>
+                  <div className="text-[10px] text-ink-muted">{pct.toFixed(0)}%</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="bg-ivory-warm rounded-xl ring-soft p-4 grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="md:col-span-2 relative">
+          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted w-4 h-4" />
+          <input value={filter.q} onChange={e => setFilter({...filter, q: e.target.value})} placeholder="Search payee, description…" className="w-full pl-9 pr-3 py-2 bg-ivory-deep/40 ring-soft rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50" />
+        </div>
+        <Select value={filter.scope} onChange={e => setFilter({...filter, scope: e.target.value})}>
+          <option value="month">Single month</option>
+          <option value="year">Whole year</option>
+          <option value="all">All time</option>
+        </Select>
+        <Input type="month" value={filter.period} onChange={e => setFilter({...filter, period: e.target.value})} disabled={filter.scope === 'all'} />
+        <Select value={filter.category} onChange={e => setFilter({...filter, category: e.target.value})}>
+          <option value="all">All categories</option>
+          {EXPENSE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.icon} {c.value}</option>)}
+        </Select>
+      </div>
+
+      {/* Table */}
+      <div className="bg-ivory-warm rounded-xl ring-soft overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-ivory-deep/60">
+              <tr>
+                <th className="text-left px-5 py-2.5">Date</th>
+                <th className="text-left">Category</th>
+                <th className="text-left">Payee</th>
+                <th className="text-left">Description</th>
+                <th className="text-right">Amount</th>
+                <th className="text-left">Mode</th>
+                <th className="text-left">For Month</th>
+                <th className="text-right pr-5"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-soft">
+              {slice.length === 0 && <tr><td colSpan="8" className="text-center py-10 text-ink-soft">No expenses match.</td></tr>}
+              {slice.map(e => {
+                const meta = EXPENSE_CATEGORIES.find(c => c.value === e.category);
+                return (
+                  <tr key={e.id} className="hover:bg-ivory-deep/40">
+                    <td className="px-5 py-2.5 tabular text-ink-soft">{e.date}</td>
+                    <td><span className="chip chip-info">{meta?.icon} {e.category}</span></td>
+                    <td className="text-ink font-medium">{e.payee_name || '—'}</td>
+                    <td className="text-ink-soft max-w-[200px] truncate" title={e.subcategory}>{e.subcategory || '—'}</td>
+                    <td className="text-right tabular font-bold text-crimson-500">{inr(e.amount)}</td>
+                    <td className="text-ink-soft text-xs">{e.mode}</td>
+                    <td className="text-ink-soft text-xs">{e.period ? periodLabel(e.period) : '—'}</td>
+                    <td className="text-right pr-5">
+                      <div className="flex gap-1 justify-end">
+                        <button onClick={() => { setEditing(e); setShowAdd(true); }} className="p-1.5 rounded hover:bg-ivory-deep text-ink-muted hover:text-teal-500"><Icon name="edit" /></button>
+                        <button onClick={() => handleDelete(e)} className="p-1.5 rounded hover:bg-crimson-500/10 text-ink-muted hover:text-crimson-500"><Icon name="trash" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {filtered.length > PAGE && (
+          <div className="px-5 py-3 flex items-center justify-between text-xs bg-ivory-deep/40 border-t border-teal-500/10">
+            <div className="text-ink-soft">Page {page+1} of {Math.ceil(filtered.length/PAGE)}</div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" disabled={page===0} onClick={() => setPage(p => p-1)}>Prev</Button>
+              <Button size="sm" variant="ghost" disabled={(page+1)*PAGE >= filtered.length} onClick={() => setPage(p => p+1)}>Next</Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <ExpenseModal open={showAdd} expense={editing} staff={staff} currentPeriod={currentPeriod} onSave={handleSave} onClose={() => { setShowAdd(false); setEditing(null); }} />
+    </div>
   );
 }
 
@@ -2495,16 +3369,24 @@ function App() {
   const [initialized, setInitialized] = useState(false);
   const [flats, setFlats] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [staff, setStaff] = useState([]);
   const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [view, setView] = useState('dashboard');
   const [currentPeriod, setCurrentPeriod] = useState(getCurrentPeriod());
   const [toast, setToast] = useState(null);
 
-  // Drive state
-  const [driveOpen, setDriveOpen] = useState(false);
-  const [driveStatus, setDriveStatus] = useState('disabled'); // disabled | connecting | connected | syncing | error | offline
-  const [driveLastSync, setDriveLastSync] = useState(() => {
-    const v = localStorage.getItem(K_DRIVE_LAST_SYNC);
+  // Auth state
+  const [authReady, setAuthReady] = useState(false);     // finished checking auth
+  const [unlocked, setUnlocked] = useState(false);
+  const [pwHash, setPwHash] = useState(null);            // null = no password set yet
+  const [showSetPw, setShowSetPw] = useState(false);
+
+  // Sync state
+  const [ghOpen, setGhOpen] = useState(false);
+  const [syncStatus, setSyncStatus] = useState('disabled');
+  const [lastSync, setLastSync] = useState(() => {
+    const v = localStorage.getItem(K_GH_LAST_SYNC);
     return v ? Number(v) : null;
   });
 
@@ -2513,121 +3395,156 @@ function App() {
     setTimeout(() => setToast(null), 2800);
   }, []);
 
-  // ----- Drive helpers -----
   const recordSync = () => {
     const t = Date.now();
-    setDriveLastSync(t);
-    localStorage.setItem(K_DRIVE_LAST_SYNC, String(t));
+    setLastSync(t);
+    localStorage.setItem(K_GH_LAST_SYNC, String(t));
   };
 
-  const pullFromDrive = useCallback(async () => {
-    if (!drive.isConfigured()) return null;
-    setDriveStatus('syncing');
+  // Build a single object representing all data
+  const buildSnapshot = useCallback(() => ({
+    version: 2,
+    config, flats, payments, expenses, staff,
+    auth: pwHash ? { passphrase_hash: pwHash } : null,
+    updated_at: nowISO(),
+    device: (navigator.userAgent.match(/\(([^)]+)\)/) || ['', 'unknown'])[1],
+  }), [config, flats, payments, expenses, staff, pwHash]);
+
+  const applySnapshot = useCallback((data) => {
+    if (data.config) setConfig({ ...DEFAULT_CONFIG, ...data.config });
+    if (Array.isArray(data.flats) && data.flats.length) setFlats(data.flats);
+    if (Array.isArray(data.payments)) setPayments(data.payments.map(migratePayment));
+    if (Array.isArray(data.expenses)) setExpenses(data.expenses);
+    if (Array.isArray(data.staff)) setStaff(data.staff);
+    if (data.auth?.passphrase_hash) setPwHash(data.auth.passphrase_hash);
+  }, []);
+
+  const pullFromGitHub = useCallback(async () => {
+    if (!github.isConfigured()) return null;
+    setSyncStatus('syncing');
     try {
-      const [fJson, pJson, cJson] = await Promise.all([
-        drive.readFile('flats'),
-        drive.readFile('payments'),
-        drive.readFile('config'),
-      ]);
-      const result = {
-        flats: fJson ? JSON.parse(fJson) : null,
-        payments: pJson ? JSON.parse(pJson) : null,
-        config: cJson ? JSON.parse(cJson) : null,
-      };
+      const file = await github.getFile();
+      if (!file) { setSyncStatus('connected'); return null; }
+      const data = JSON.parse(file.text);
       recordSync();
-      setDriveStatus('connected');
-      return result;
+      setSyncStatus('connected');
+      return data;
     } catch (e) {
-      console.error('Drive pull failed', e);
-      setDriveStatus('error');
-      showToast('Drive pull failed: ' + e.message, 'error');
+      console.error('GitHub pull failed', e);
+      setSyncStatus('error');
+      showToast('Pull failed: ' + e.message, 'error');
       return null;
     }
   }, [showToast]);
 
-  // ----- Initial load -----
+  // ---- Initial load ----
   useEffect(() => {
     (async () => {
-      // 1. Load local (instant)
+      // 1. Load local
       const cfg = await storage.get(K_CONFIG, null);
       const f = await storage.get(K_FLATS, null);
       const p = await storage.get(K_PAYMENTS, []);
+      const ex = await storage.get(K_EXPENSES, []);
+      const st = await storage.get(K_STAFF, []);
       let initFlats = (f && Array.isArray(f) && f.length > 0) ? f : null;
       let initPayments = (p || []).map(migratePayment);
+      let initExpenses = ex || [];
+      let initStaff = st || [];
       let initConfig = cfg ? { ...DEFAULT_CONFIG, ...cfg } : null;
+      let initHash = cfg?.passphrase_hash || null;
 
-      // 2. If Drive configured, try silent connect and pull
-      if (drive.isConfigured() && !drive.isFileOrigin()) {
-        setDriveStatus('connecting');
+      // 2. If GitHub configured, pull
+      if (github.isConfigured()) {
+        setSyncStatus('connecting');
         try {
-          await drive.connect({ promptUser: false });
-          const dr = await pullFromDrive();
-          if (dr) {
-            if (dr.config) initConfig = { ...DEFAULT_CONFIG, ...dr.config };
-            if (dr.flats && Array.isArray(dr.flats) && dr.flats.length) initFlats = dr.flats;
-            if (dr.payments && Array.isArray(dr.payments)) initPayments = dr.payments.map(migratePayment);
+          const file = await github.getFile();
+          if (file) {
+            const data = JSON.parse(file.text);
+            if (data.config) initConfig = { ...DEFAULT_CONFIG, ...data.config };
+            if (Array.isArray(data.flats) && data.flats.length) initFlats = data.flats;
+            if (Array.isArray(data.payments)) initPayments = data.payments.map(migratePayment);
+            if (Array.isArray(data.expenses)) initExpenses = data.expenses;
+            if (Array.isArray(data.staff)) initStaff = data.staff;
+            if (data.auth?.passphrase_hash) initHash = data.auth.passphrase_hash;
+            recordSync();
+            setSyncStatus('connected');
+          } else {
+            setSyncStatus('connected');
           }
         } catch (e) {
-          console.warn('Silent Drive connect failed', e);
-          setDriveStatus('offline');
-          showToast('Drive not connected (token expired). Click the badge to reconnect.', 'info');
+          console.warn('GitHub silent pull failed', e);
+          setSyncStatus('offline');
+          showToast('Could not reach GitHub: ' + e.message, 'info');
         }
-      } else if (drive.isConfigured() && drive.isFileOrigin()) {
-        setDriveStatus('disabled');
       }
 
       if (initConfig) setConfig(initConfig);
+      setExpenses(initExpenses);
+      setStaff(initStaff);
       if (initFlats) {
         setFlats(initFlats); setPayments(initPayments); setInitialized(true);
       }
+      setPwHash(initHash);
+      setUnlocked(!initHash || auth.hasValidSession());
+      setAuthReady(true);
       setLoading(false);
 
-      // 3. If not configured and not dismissed, show setup popup
-      if (!drive.isConfigured() && !localStorage.getItem(K_DRIVE_DISMISSED)) {
-        // give the UI a beat to render first
-        setTimeout(() => setDriveOpen(true), 500);
+      // 3. If not configured and not dismissed, popup
+      if (!github.isConfigured() && !localStorage.getItem('sjm1:gh:setupDismissed')) {
+        setTimeout(() => setGhOpen(true), 500);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ----- Auto-push to Drive on data change (debounced) -----
-  const pushTimers = useRef({});
-  const pushKey = useCallback((key, value) => {
-    if (!drive.isConfigured() || drive.isFileOrigin()) return;
-    clearTimeout(pushTimers.current[key]);
-    pushTimers.current[key] = setTimeout(async () => {
-      // re-check at fire time in case user disconnected during the debounce window
-      if (!drive.isConfigured() || drive.isFileOrigin()) return;
+  // ---- Auto-push to GitHub on data change (debounced) ----
+  const pushTimer = useRef(null);
+  const schedulePush = useCallback(() => {
+    if (!github.isConfigured()) return;
+    clearTimeout(pushTimer.current);
+    pushTimer.current = setTimeout(async () => {
+      if (!github.isConfigured()) return;
       try {
-        setDriveStatus('syncing');
-        await drive.writeFile(key, JSON.stringify(value));
+        setSyncStatus('syncing');
+        const snap = buildSnapshot();
+        await github.putFile(JSON.stringify(snap, null, 2));
         recordSync();
-        setDriveStatus('connected');
+        setSyncStatus('connected');
       } catch (e) {
-        console.error('Drive push failed', key, e);
-        setDriveStatus('error');
-        // retry with fresh token next time the user interacts
+        console.error('GitHub push failed', e);
+        setSyncStatus('error');
       }
     }, 2500);
-  }, []);
+  }, [buildSnapshot]);
 
-  // persist local + push to Drive on every change
+  // persist local + push to GitHub on every change
   useEffect(() => {
     if (!initialized) return;
     storage.set(K_FLATS, flats);
-    pushKey('flats', flats);
-  }, [flats, initialized, pushKey]);
+    schedulePush();
+  }, [flats, initialized, schedulePush]);
   useEffect(() => {
     if (!initialized) return;
     storage.set(K_PAYMENTS, payments);
-    pushKey('payments', payments);
-  }, [payments, initialized, pushKey]);
+    schedulePush();
+  }, [payments, initialized, schedulePush]);
   useEffect(() => {
     if (!initialized) return;
-    storage.set(K_CONFIG, config);
-    pushKey('config', config);
-  }, [config, initialized, pushKey]);
+    storage.set(K_EXPENSES, expenses);
+    schedulePush();
+  }, [expenses, initialized, schedulePush]);
+  useEffect(() => {
+    if (!initialized) return;
+    storage.set(K_STAFF, staff);
+    schedulePush();
+  }, [staff, initialized, schedulePush]);
+  useEffect(() => {
+    if (!initialized) return;
+    // store the hash inside config too so local-only setups work
+    const cfgToSave = { ...config, passphrase_hash: pwHash };
+    storage.set(K_CONFIG, cfgToSave);
+    schedulePush();
+  }, [config, pwHash, initialized, schedulePush]);
 
   const initialize = async () => {
     const newFlats = generateFlats();
@@ -2636,107 +3553,81 @@ function App() {
     await storage.set(K_PAYMENTS, []);
     setFlats(newFlats); setPayments([]); setInitialized(true);
     showToast(`Society initialised with ${newFlats.length} units`, 'success');
+    // Prompt to set a passphrase after initial setup
+    if (!pwHash) setTimeout(() => setShowSetPw(true), 400);
   };
 
   const addPayments = (list) => setPayments(prev => [...prev, ...list]);
   const deletePayment = (id) => setPayments(prev => prev.filter(p => p.id !== id));
+  const addExpense = (e) => setExpenses(prev => [...prev, e]);
+  const updateExpense = (id, patch) => setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...patch } : e));
+  const deleteExpense = (id) => setExpenses(prev => prev.filter(e => e.id !== id));
+  const addStaff = (s) => setStaff(prev => [...prev, s]);
+  const updateStaff = (id, patch) => setStaff(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
+  const deleteStaff = (id) => setStaff(prev => prev.filter(s => s.id !== id));
 
-  // After connect via setup modal — decide what to do with existing data
-  const onDriveConnected = useCallback(async () => {
-    setDriveStatus('connecting');
+  // After connect via setup modal
+  const onGitHubConnected = useCallback(async () => {
+    setSyncStatus('connecting');
     try {
-      // Check what's on Drive
-      const remoteJson = await drive.readFile('flats');
-      const hasLocal = flats.length > 0;
-      const hasRemote = !!remoteJson;
+      const file = await github.getFile();
+      const hasLocal = flats.length > 0 || expenses.length > 0 || staff.length > 0;
+      const hasRemote = !!file;
       if (hasRemote && hasLocal) {
-        // both exist — ask user
         const wantPull = confirm(
-          'Both Drive and local storage have data.\n\n' +
-          'OK → Pull from Drive (replace local).\n' +
-          'Cancel → Push local to Drive (overwrite Drive).'
+          'Both GitHub and local storage have data.\n\n' +
+          'OK → Pull from GitHub (replace local).\n' +
+          'Cancel → Push local to GitHub (overwrite remote).'
         );
         if (wantPull) {
-          const dr = await pullFromDrive();
-          if (dr) {
-            if (dr.flats) setFlats(dr.flats);
-            if (dr.payments) setPayments(dr.payments.map(migratePayment));
-            if (dr.config) setConfig({ ...DEFAULT_CONFIG, ...dr.config });
-            showToast('Pulled data from Google Drive', 'success');
-          }
-        } else {
-          setDriveStatus('syncing');
-          await Promise.all([
-            drive.writeFile('flats', JSON.stringify(flats)),
-            drive.writeFile('payments', JSON.stringify(payments)),
-            drive.writeFile('config', JSON.stringify(config)),
-          ]);
+          const data = JSON.parse(file.text);
+          applySnapshot(data);
           recordSync();
-          setDriveStatus('connected');
-          showToast('Pushed local data to Google Drive', 'success');
+          setSyncStatus('connected');
+          showToast('Pulled data from GitHub', 'success');
+        } else {
+          setSyncStatus('syncing');
+          await github.putFile(JSON.stringify(buildSnapshot(), null, 2), 'Initial upload from local storage');
+          recordSync();
+          setSyncStatus('connected');
+          showToast('Pushed local data to GitHub', 'success');
         }
       } else if (hasRemote) {
-        // pull
-        const dr = await pullFromDrive();
-        if (dr) {
-          if (dr.flats) setFlats(dr.flats);
-          if (dr.payments) setPayments(dr.payments.map(migratePayment));
-          if (dr.config) setConfig({ ...DEFAULT_CONFIG, ...dr.config });
-          if (dr.flats && !initialized) setInitialized(true);
-          showToast('Loaded data from Google Drive', 'success');
-        }
-      } else if (hasLocal) {
-        // push
-        setDriveStatus('syncing');
-        await Promise.all([
-          drive.writeFile('flats', JSON.stringify(flats)),
-          drive.writeFile('payments', JSON.stringify(payments)),
-          drive.writeFile('config', JSON.stringify(config)),
-        ]);
+        const data = JSON.parse(file.text);
+        applySnapshot(data);
+        if (data.flats && data.flats.length && !initialized) setInitialized(true);
         recordSync();
-        setDriveStatus('connected');
-        showToast('Uploaded local data to Google Drive', 'success');
+        setSyncStatus('connected');
+        showToast('Loaded data from GitHub', 'success');
+      } else if (hasLocal) {
+        setSyncStatus('syncing');
+        await github.putFile(JSON.stringify(buildSnapshot(), null, 2), 'Initial upload from local storage');
+        recordSync();
+        setSyncStatus('connected');
+        showToast('Uploaded local data to GitHub', 'success');
       } else {
-        setDriveStatus('connected');
-        showToast('Connected to Google Drive', 'success');
+        setSyncStatus('connected');
+        showToast('Connected to GitHub', 'success');
       }
     } catch (e) {
       console.error(e);
-      setDriveStatus('error');
+      setSyncStatus('error');
       showToast('Connection succeeded but sync failed: ' + e.message, 'error');
     }
-  }, [flats, payments, config, initialized, pullFromDrive, showToast]);
+  }, [flats, expenses, staff, initialized, applySnapshot, buildSnapshot, showToast]);
 
-  const handleDriveBadgeClick = useCallback(async () => {
-    if (!drive.isConfigured()) { setDriveOpen(true); return; }
-    if (drive.isFileOrigin()) { setDriveOpen(true); return; }
-    // Try (re)connect if currently disconnected
-    if (!drive.isConnected()) {
-      setDriveStatus('connecting');
-      try {
-        await drive.connect({ promptUser: true });
-        await onDriveConnected();
-      } catch (e) {
-        setDriveStatus('error');
-        showToast('Could not reconnect: ' + e.message, 'error');
-      }
-    } else {
-      // Force a fresh pull
-      const dr = await pullFromDrive();
-      if (dr) {
-        if (dr.flats) setFlats(dr.flats);
-        if (dr.payments) setPayments(dr.payments.map(migratePayment));
-        if (dr.config) setConfig({ ...DEFAULT_CONFIG, ...dr.config });
-        showToast('Refreshed from Google Drive', 'success');
-      }
-    }
-  }, [onDriveConnected, pullFromDrive, showToast]);
+  const handleSyncBadgeClick = useCallback(async () => {
+    if (!github.isConfigured()) { setGhOpen(true); return; }
+    const data = await pullFromGitHub();
+    if (data) { applySnapshot(data); showToast('Refreshed from GitHub', 'success'); }
+  }, [pullFromGitHub, applySnapshot, showToast]);
 
   const defaulterCount = useMemo(() => {
     const occupied = flats.filter(f => f.occupancy !== 'Vacant');
     return occupied.filter(f => paidByFlatInPeriod(payments, f.flat_no, currentPeriod) < f.monthly_amount).length;
   }, [flats, payments, currentPeriod]);
 
+  // ---- Render gating ----
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
@@ -2746,10 +3637,26 @@ function App() {
     </div>;
   }
 
+  // Login gate — only show after authReady, only if a hash exists and session expired
+  if (authReady && pwHash && !unlocked) {
+    return (
+      <LoginGate
+        storedHash={pwHash}
+        society={config.society_name}
+        onUnlock={() => setUnlocked(true)}
+        onReset={() => {
+          if (!confirm('This will erase all local data on this device. GitHub data (if any) will remain. Continue?')) return;
+          [K_FLATS, K_PAYMENTS, K_CONFIG, K_EXPENSES, K_STAFF, K_GH_CONFIG, K_GH_SHA, K_GH_LAST_SYNC, K_AUTH_SESSION].forEach(k => localStorage.removeItem(k));
+          location.reload();
+        }}
+      />
+    );
+  }
+
   if (!initialized) return (
     <>
       <Onboarding onInitialize={initialize} />
-      <DriveSetupModal open={driveOpen} onClose={() => setDriveOpen(false)} onConnected={onDriveConnected} toast={showToast} hasLocalData={flats.length > 0} />
+      <GitHubSetupModal open={ghOpen} onClose={() => setGhOpen(false)} onConnected={onGitHubConnected} toast={showToast} hasLocalData={flats.length > 0} />
     </>
   );
 
@@ -2758,56 +3665,60 @@ function App() {
       <Sidebar
         view={view} setView={setView} society={config}
         defaulterCount={defaulterCount} currentPeriod={currentPeriod}
-        driveStatus={driveStatus} driveLastSync={driveLastSync}
-        onDriveBadgeClick={handleDriveBadgeClick}
+        driveStatus={syncStatus} driveLastSync={lastSync}
+        onDriveBadgeClick={handleSyncBadgeClick}
+        onLogout={() => { auth.endSession(); setUnlocked(false); }}
+        hasPw={!!pwHash}
       />
       <main className="flex-1 px-6 py-8 max-w-[1400px]">
-        {view === 'dashboard' && <Dashboard flats={flats} payments={payments} currentPeriod={currentPeriod} setView={setView} setCurrentPeriod={setCurrentPeriod} />}
+        {view === 'dashboard' && <Dashboard flats={flats} payments={payments} expenses={expenses} currentPeriod={currentPeriod} setView={setView} setCurrentPeriod={setCurrentPeriod} />}
         {view === 'flats' && <FlatsView flats={flats} setFlats={setFlats} payments={payments} currentPeriod={currentPeriod} rates={config.rates} toast={showToast} />}
         {view === 'record' && <RecordPayment flats={flats} payments={payments} addPayments={addPayments} currentPeriod={currentPeriod} config={config} setConfig={setConfig} toast={showToast} setView={setView} />}
         {view === 'history' && <PaymentHistory payments={payments} flats={flats} deletePayment={deletePayment} toast={showToast} />}
         {view === 'defaulters' && <Defaulters flats={flats} payments={payments} currentPeriod={currentPeriod} config={config} toast={showToast} />}
-        {view === 'reports' && <Reports flats={flats} payments={payments} currentPeriod={currentPeriod} config={config} />}
+        {view === 'expenses' && <ExpensesView expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} staff={staff} currentPeriod={currentPeriod} toast={showToast} />}
+        {view === 'staff' && <StaffView staff={staff} addStaff={addStaff} updateStaff={updateStaff} deleteStaff={deleteStaff} expenses={expenses} addExpense={addExpense} currentPeriod={currentPeriod} toast={showToast} />}
+        {view === 'reports' && <Reports flats={flats} payments={payments} expenses={expenses} currentPeriod={currentPeriod} config={config} />}
         {view === 'settings' && (
           <Settings
             config={config} setConfig={setConfig}
             flats={flats} setFlats={setFlats}
             payments={payments} setPayments={setPayments}
+            expenses={expenses} setExpenses={setExpenses}
+            staff={staff} setStaff={setStaff}
             toast={showToast}
-            driveStatus={driveStatus} driveLastSync={driveLastSync}
-            onOpenDriveSetup={() => setDriveOpen(true)}
-            onDisconnectDrive={() => { drive.disconnect(); setDriveStatus('disabled'); setDriveLastSync(null); localStorage.removeItem(K_DRIVE_LAST_SYNC); showToast('Disconnected from Google Drive', 'info'); }}
-            onForgetDrive={() => { drive.forget(); setDriveStatus('disabled'); setDriveLastSync(null); showToast('Drive credentials cleared', 'info'); }}
-            onPullDrive={async () => {
-              const dr = await pullFromDrive();
-              if (dr) {
-                if (dr.flats) setFlats(dr.flats);
-                if (dr.payments) setPayments(dr.payments.map(migratePayment));
-                if (dr.config) setConfig({ ...DEFAULT_CONFIG, ...dr.config });
-                showToast('Pulled data from Google Drive', 'success');
-              }
+            syncStatus={syncStatus} lastSync={lastSync}
+            onOpenSync={() => setGhOpen(true)}
+            onForgetSync={() => { github.forget(); setSyncStatus('disabled'); setLastSync(null); showToast('GitHub credentials cleared', 'info'); }}
+            onPullSync={async () => {
+              const data = await pullFromGitHub();
+              if (data) { applySnapshot(data); showToast('Pulled data from GitHub', 'success'); }
             }}
-            onPushDrive={async () => {
+            onPushSync={async () => {
               try {
-                setDriveStatus('syncing');
-                await Promise.all([
-                  drive.writeFile('flats', JSON.stringify(flats)),
-                  drive.writeFile('payments', JSON.stringify(payments)),
-                  drive.writeFile('config', JSON.stringify(config)),
-                ]);
+                setSyncStatus('syncing');
+                await github.putFile(JSON.stringify(buildSnapshot(), null, 2), 'Manual push from Settings');
                 recordSync();
-                setDriveStatus('connected');
-                showToast('Pushed all data to Google Drive', 'success');
+                setSyncStatus('connected');
+                showToast('Pushed all data to GitHub', 'success');
               } catch (e) {
-                setDriveStatus('error');
+                setSyncStatus('error');
                 showToast('Push failed: ' + e.message, 'error');
               }
             }}
+            pwHash={pwHash}
+            onSetPassword={() => setShowSetPw(true)}
+            onRemovePassword={() => { if (confirm('Remove the passphrase protection?')) { setPwHash(null); auth.endSession(); showToast('Passphrase removed', 'info'); } }}
           />
         )}
       </main>
       <Toast toast={toast} />
-      <DriveSetupModal open={driveOpen} onClose={() => setDriveOpen(false)} onConnected={onDriveConnected} toast={showToast} hasLocalData={flats.length > 0} />
+      <GitHubSetupModal open={ghOpen} onClose={() => setGhOpen(false)} onConnected={onGitHubConnected} toast={showToast} hasLocalData={flats.length > 0} />
+      <SetPasswordModal
+        open={showSetPw}
+        onSet={(h) => { setPwHash(h); setShowSetPw(false); auth.startSession(); showToast('Passphrase set — keep it safe!', 'success'); }}
+        onSkip={() => setShowSetPw(false)}
+      />
     </div>
   );
 }
