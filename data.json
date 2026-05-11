@@ -8752,10 +8752,22 @@
   ],
   "payments": [],
   "expenses": [],
-  "staff": [],
+  "staff": [
+    {
+      "id": "o5k8o3h6atbu",
+      "name": "ravinder",
+      "role": "Security Guard",
+      "phone": "",
+      "joining_date": "2026-04-11",
+      "monthly_salary": 11250,
+      "is_active": true,
+      "notes": "",
+      "updated_at": "2026-05-11T16:07:33.882Z"
+    }
+  ],
   "auth": {
     "passphrase_hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
   },
-  "updated_at": "2026-05-11T16:03:12.244Z",
+  "updated_at": "2026-05-11T16:07:36.401Z",
   "device": "Windows NT 10.0; Win64; x64"
 }
