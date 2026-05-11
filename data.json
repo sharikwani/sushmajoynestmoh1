@@ -3492,12 +3492,12 @@
       "unit": 6,
       "type": "3BHK",
       "monthly_amount": 3304,
-      "owner_name": "",
-      "owner_phone": "",
-      "owner_email": "",
+      "owner_name": "Sharik ",
+      "owner_phone": "7006300665",
+      "owner_email": "stoicdude92@gmail.com",
       "occupancy": "Owner",
       "notes": "",
-      "updated_at": "2026-05-11T15:43:29.936Z"
+      "updated_at": "2026-05-11T16:11:30.937Z"
     },
     {
       "id": "D107",
@@ -8797,6 +8797,6 @@
   "auth": {
     "passphrase_hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
   },
-  "updated_at": "2026-05-11T16:10:30.979Z",
+  "updated_at": "2026-05-11T16:11:33.441Z",
   "device": "Windows NT 10.0; Win64; x64"
 }
