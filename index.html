@@ -786,7 +786,7 @@ function StatCard({ label, value, sub, tone='teal', icon }) {
   );
 }
 
-function Dashboard({ flats, payments, currentPeriod, setView, setCurrentPeriod }) {
+function Dashboard({ flats, payments, expenses = [], currentPeriod, setView, setCurrentPeriod }) {
   const stats = useMemo(() => {
     const period = currentPeriod;
     const occupied = flats.filter(f => f.occupancy !== 'Vacant');
@@ -809,6 +809,21 @@ function Dashboard({ flats, payments, currentPeriod, setView, setCurrentPeriod }
     const rate = expected ? (collected / expected) * 100 : 0;
     return { expected, collected, pending: Math.max(expected - collected, 0), paidFlats, partialFlats, defaulterFlats, rate, entryCount };
   }, [flats, payments, currentPeriod]);
+
+  // Expense statistics for the current period
+  const expenseStats = useMemo(() => {
+    const monthExpenses = expenses.filter(e => e.period === currentPeriod);
+    const total = monthExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const salaries = monthExpenses.filter(e => e.category === 'Staff Salary').reduce((s, e) => s + e.amount, 0);
+    const other = total - salaries;
+    // Top 3 categories
+    const byCategory = {};
+    monthExpenses.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + e.amount; });
+    const top = Object.entries(byCategory).sort((a,b) => b[1]-a[1]).slice(0, 5);
+    return { total, salaries, other, byCategory, top, count: monthExpenses.length };
+  }, [expenses, currentPeriod]);
+
+  const netCashflow = stats.collected - expenseStats.total;
 
   const towerBreakdown = useMemo(() => {
     const all = ['A','B','C','D','J','K','L','M','Shops'];
@@ -867,6 +882,84 @@ function Dashboard({ flats, payments, currentPeriod, setView, setCurrentPeriod }
         <StatCard tone="moss" label="Collected" value={inr(stats.collected)} sub={`${stats.paidFlats.length} fully paid · ${stats.partialFlats.length} partial`} icon="check" />
         <StatCard tone="crimson" label="Pending" value={inr(stats.pending)} sub={`${stats.defaulterFlats.length} flats unpaid`} icon="alert" />
         <StatCard tone="clay" label="Collection Rate" value={stats.rate.toFixed(1) + '%'} sub={`${stats.entryCount} payment entries`} icon="chart" />
+      </div>
+
+      {/* Money Out — Expenses summary for the period */}
+      <div className="bg-ivory-warm rounded-xl ring-soft p-5">
+        <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+          <div>
+            <div className="text-[11px] uppercase tracking-[0.2em] text-clay-500 font-semibold mb-0.5">Money Out · {periodLabel(currentPeriod)}</div>
+            <div className="font-display text-2xl text-ink leading-none">Expenses &amp; Salaries</div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="soft" onClick={() => setView('staff')}><Icon name="users" /> Pay Staff</Button>
+            <Button size="sm" variant="outline" onClick={() => setView('expenses')}><Icon name="rupee" /> All Expenses →</Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <div className="bg-crimson-500/5 ring-1 ring-crimson-500/20 rounded-lg p-4">
+            <div className="text-[11px] uppercase tracking-wider text-crimson-500 font-semibold">Total Out</div>
+            <div className="font-mono text-2xl font-bold text-crimson-500 tabular mt-1">{inr(expenseStats.total)}</div>
+            <div className="text-[11px] text-ink-soft mt-1">{expenseStats.count} expense {expenseStats.count === 1 ? 'entry' : 'entries'}</div>
+          </div>
+          <div className="bg-teal-500/5 ring-1 ring-teal-500/20 rounded-lg p-4">
+            <div className="text-[11px] uppercase tracking-wider text-teal-500 font-semibold">Staff Salaries</div>
+            <div className="font-mono text-2xl font-bold text-teal-500 tabular mt-1">{inr(expenseStats.salaries)}</div>
+            <div className="text-[11px] text-ink-soft mt-1">{expenseStats.byCategory['Staff Salary'] ? 'Click Staff to manage' : 'No salaries paid yet'}</div>
+          </div>
+          <div className="bg-clay-500/5 ring-1 ring-clay-500/20 rounded-lg p-4">
+            <div className="text-[11px] uppercase tracking-wider text-clay-500 font-semibold">Other Expenses</div>
+            <div className="font-mono text-2xl font-bold text-clay-500 tabular mt-1">{inr(expenseStats.other)}</div>
+            <div className="text-[11px] text-ink-soft mt-1">Repairs, utilities, etc.</div>
+          </div>
+        </div>
+
+        {/* Net Cashflow */}
+        <div className={`rounded-lg p-4 ${netCashflow >= 0 ? 'bg-moss-500/10 ring-1 ring-moss-500/30' : 'bg-crimson-500/10 ring-1 ring-crimson-500/30'}`}>
+          <div className="flex items-baseline justify-between flex-wrap gap-2">
+            <div>
+              <div className="text-[11px] uppercase tracking-wider font-semibold text-ink-soft">Net Cashflow this month</div>
+              <div className="text-[11px] text-ink-muted mt-0.5">Collected − Expenses</div>
+            </div>
+            <div className="text-right">
+              <div className={`font-mono text-3xl font-bold tabular ${netCashflow >= 0 ? 'text-moss-500' : 'text-crimson-500'}`}>
+                {netCashflow >= 0 ? '+' : ''}{inr(netCashflow)}
+              </div>
+              <div className="text-[11px] text-ink-soft mt-0.5">
+                {inr(stats.collected)} in − {inr(expenseStats.total)} out
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Top categories */}
+        {expenseStats.top.length > 0 && (
+          <div className="mt-4">
+            <div className="text-[11px] uppercase tracking-wider text-ink-soft font-semibold mb-2">Top spending</div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              {expenseStats.top.map(([cat, amt]) => {
+                const pct = expenseStats.total > 0 ? (amt / expenseStats.total) * 100 : 0;
+                return (
+                  <div key={cat} className="bg-ivory-deep/40 rounded-md p-2.5 ring-soft">
+                    <div className="text-[11px] text-ink-soft font-medium truncate" title={cat}>{cat}</div>
+                    <div className="font-mono text-sm font-bold text-ink tabular mt-0.5">{inr(amt)}</div>
+                    <div className="w-full bg-ivory-warm rounded-full h-1 mt-1.5 overflow-hidden">
+                      <div className="bg-crimson-500 h-1 rounded-full" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {expenseStats.count === 0 && (
+          <div className="mt-3 text-center text-sm text-ink-soft py-3">
+            No expenses recorded for {periodLabel(currentPeriod)} yet.{' '}
+            <button onClick={() => setView('expenses')} className="text-teal-500 font-semibold hover:underline">Record one →</button>
+          </div>
+        )}
       </div>
 
       <div className="bg-ivory-warm rounded-xl ring-soft p-5">
@@ -2113,14 +2206,59 @@ function Defaulters({ flats, payments, currentPeriod, config, toast }) {
       <Modal open={!!showMsg} onClose={() => setShowMsg(null)} title={showMsg ? `Reminder for ${showMsg.d.flat_no}` : ''} maxWidth="max-w-xl"
         footer={<>
           <Button variant="ghost" onClick={() => setShowMsg(null)}>Close</Button>
-          <Button onClick={() => { navigator.clipboard.writeText(showMsg.text); toast('Message copied to clipboard', 'success'); }}>Copy</Button>
+          <Button variant="soft" onClick={() => { navigator.clipboard.writeText(showMsg.text); toast('Message copied to clipboard', 'success'); }}><Icon name="list" /> Copy</Button>
         </>}>
         {showMsg && <>
+          <div className="mb-2 text-[12px] text-ink-soft">
+            {showMsg.d.owner_name && <span><strong>To:</strong> {showMsg.d.owner_name}</span>}
+            {showMsg.d.owner_phone && <span className="ml-3"><Icon name="phone" className="w-3 h-3 inline mr-0.5" /> {showMsg.d.owner_phone}</span>}
+            {showMsg.d.owner_email && <span className="ml-3"><Icon name="mail" className="w-3 h-3 inline mr-0.5" /> {showMsg.d.owner_email}</span>}
+            {!showMsg.d.owner_phone && !showMsg.d.owner_email && (
+              <span className="text-clay-500">⚠ No phone/email saved for this flat — buttons below will open the app with no recipient pre-filled. Add contact in Flats &amp; Owners for one-tap sending.</span>
+            )}
+          </div>
           <Textarea value={showMsg.text} onChange={e => setShowMsg({...showMsg, text: e.target.value})} rows={9} />
-          <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            {showMsg.d.owner_phone && <a href={`${waLink(showMsg.d.owner_phone)}?text=${encodeURIComponent(showMsg.text)}`} target="_blank" rel="noopener" className="px-3 py-1.5 bg-[#25D366] text-white rounded-md inline-flex items-center gap-1.5 font-semibold"><Icon name="whatsapp" className="w-3.5 h-3.5" /> Send via WhatsApp</a>}
-            {showMsg.d.owner_email && <a href={`mailto:${showMsg.d.owner_email}?subject=${encodeURIComponent('Maintenance dues — ' + showMsg.d.flat_no)}&body=${encodeURIComponent(showMsg.text)}`} className="px-3 py-1.5 bg-ink text-ivory-warm rounded-md inline-flex items-center gap-1.5 font-semibold"><Icon name="mail" className="w-3.5 h-3.5" /> Send via Email</a>}
-            {showMsg.d.owner_phone && <a href={`sms:${cleanPhone(showMsg.d.owner_phone)}?body=${encodeURIComponent(showMsg.text)}`} className="px-3 py-1.5 bg-clay-500 text-white rounded-md inline-flex items-center gap-1.5 font-semibold"><Icon name="msg" className="w-3.5 h-3.5" /> Send via SMS</a>}
+          <div className="mt-3">
+            <div className="text-[11px] uppercase tracking-wider text-ink-soft font-semibold mb-2">Send reminder via</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <a
+                href={showMsg.d.owner_phone
+                  ? `${waLink(showMsg.d.owner_phone)}?text=${encodeURIComponent(showMsg.text)}`
+                  : `https://wa.me/?text=${encodeURIComponent(showMsg.text)}`}
+                target="_blank" rel="noopener"
+                className="px-3 py-2 bg-[#25D366] text-white rounded-md inline-flex items-center justify-center gap-1.5 font-semibold text-xs hover:opacity-90"
+              >
+                <Icon name="whatsapp" className="w-3.5 h-3.5" /> WhatsApp
+              </a>
+              <a
+                href={`mailto:${showMsg.d.owner_email || ''}?subject=${encodeURIComponent('Maintenance dues — ' + showMsg.d.flat_no + ' · ' + config.society_name)}&body=${encodeURIComponent(showMsg.text)}`}
+                className="px-3 py-2 bg-ink text-ivory-warm rounded-md inline-flex items-center justify-center gap-1.5 font-semibold text-xs hover:opacity-90"
+              >
+                <Icon name="mail" className="w-3.5 h-3.5" /> Email
+              </a>
+              <a
+                href={showMsg.d.owner_phone
+                  ? `sms:${cleanPhone(showMsg.d.owner_phone)}?body=${encodeURIComponent(showMsg.text)}`
+                  : `sms:?body=${encodeURIComponent(showMsg.text)}`}
+                className="px-3 py-2 bg-clay-500 text-white rounded-md inline-flex items-center justify-center gap-1.5 font-semibold text-xs hover:bg-clay-600"
+              >
+                <Icon name="msg" className="w-3.5 h-3.5" /> SMS
+              </a>
+              <button
+                onClick={async () => {
+                  if (navigator.share) {
+                    try { await navigator.share({ title: 'Maintenance Reminder — ' + showMsg.d.flat_no, text: showMsg.text }); }
+                    catch (e) { /* user cancelled */ }
+                  } else {
+                    navigator.clipboard.writeText(showMsg.text);
+                    toast('Share not supported — text copied instead', 'info');
+                  }
+                }}
+                className="px-3 py-2 bg-teal-500 text-white rounded-md inline-flex items-center justify-center gap-1.5 font-semibold text-xs hover:bg-teal-600"
+              >
+                <Icon name="share" className="w-3.5 h-3.5" /> Share…
+              </button>
+            </div>
           </div>
         </>}
       </Modal>
