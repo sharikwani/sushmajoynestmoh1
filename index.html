@@ -3439,59 +3439,87 @@ function App() {
 
   // ---- Initial load ----
   useEffect(() => {
-    (async () => {
-      // 1. Load local
-      const cfg = await storage.get(K_CONFIG, null);
-      const f = await storage.get(K_FLATS, null);
-      const p = await storage.get(K_PAYMENTS, []);
-      const ex = await storage.get(K_EXPENSES, []);
-      const st = await storage.get(K_STAFF, []);
-      let initFlats = (f && Array.isArray(f) && f.length > 0) ? f : null;
-      let initPayments = (p || []).map(migratePayment);
-      let initExpenses = ex || [];
-      let initStaff = st || [];
-      let initConfig = cfg ? { ...DEFAULT_CONFIG, ...cfg } : null;
-      let initHash = cfg?.passphrase_hash || null;
-
-      // 2. If GitHub configured, pull
-      if (github.isConfigured()) {
-        setSyncStatus('connecting');
-        try {
-          const file = await github.getFile();
-          if (file) {
-            const data = JSON.parse(file.text);
-            if (data.config) initConfig = { ...DEFAULT_CONFIG, ...data.config };
-            if (Array.isArray(data.flats) && data.flats.length) initFlats = data.flats;
-            if (Array.isArray(data.payments)) initPayments = data.payments.map(migratePayment);
-            if (Array.isArray(data.expenses)) initExpenses = data.expenses;
-            if (Array.isArray(data.staff)) initStaff = data.staff;
-            if (data.auth?.passphrase_hash) initHash = data.auth.passphrase_hash;
-            recordSync();
-            setSyncStatus('connected');
-          } else {
-            setSyncStatus('connected');
-          }
-        } catch (e) {
-          console.warn('GitHub silent pull failed', e);
-          setSyncStatus('offline');
-          showToast('Could not reach GitHub: ' + e.message, 'info');
+    // Safety net: if init never reaches setLoading(false) for any reason, force-stop after 12 seconds
+    const safetyTimeout = setTimeout(() => {
+      setLoading(prev => {
+        if (prev) {
+          console.error('Safety timeout — forcing loading to false. Check console for errors.');
+          alert('The app took unusually long to load. Continuing anyway. If problems persist, click the GitHub sync badge to reconnect, or use Reset on the lock screen.');
         }
-      }
-
-      if (initConfig) setConfig(initConfig);
-      setExpenses(initExpenses);
-      setStaff(initStaff);
-      if (initFlats) {
-        setFlats(initFlats); setPayments(initPayments); setInitialized(true);
-      }
-      setPwHash(initHash);
-      setUnlocked(!initHash || auth.hasValidSession());
+        return false;
+      });
       setAuthReady(true);
-      setLoading(false);
+    }, 12000);
 
-      // 3. If not configured and not dismissed, popup
-      if (!github.isConfigured() && !localStorage.getItem('sjm1:gh:setupDismissed')) {
-        setTimeout(() => setGhOpen(true), 500);
+    (async () => {
+      try {
+        // 1. Load local
+        const cfg = await storage.get(K_CONFIG, null);
+        const f = await storage.get(K_FLATS, null);
+        const p = await storage.get(K_PAYMENTS, []);
+        const ex = await storage.get(K_EXPENSES, []);
+        const st = await storage.get(K_STAFF, []);
+        let initFlats = (f && Array.isArray(f) && f.length > 0) ? f : null;
+        let initPayments = [];
+        try { initPayments = (Array.isArray(p) ? p : []).filter(x => x && typeof x === 'object').map(migratePayment); }
+        catch (e) { console.error('Payment migration failed', e); initPayments = []; }
+        let initExpenses = Array.isArray(ex) ? ex : [];
+        let initStaff = Array.isArray(st) ? st : [];
+        let initConfig = cfg ? { ...DEFAULT_CONFIG, ...cfg } : null;
+        let initHash = (cfg && cfg.passphrase_hash) || null;
+
+        // 2. If GitHub configured, pull (with 8s timeout so we never hang)
+        if (github.isConfigured()) {
+          setSyncStatus('connecting');
+          try {
+            const file = await Promise.race([
+              github.getFile(),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('GitHub took too long to respond — continuing with local data')), 8000)),
+            ]);
+            if (file) {
+              const data = JSON.parse(file.text);
+              if (data.config) initConfig = { ...DEFAULT_CONFIG, ...data.config };
+              if (Array.isArray(data.flats) && data.flats.length) initFlats = data.flats;
+              if (Array.isArray(data.payments)) {
+                try { initPayments = data.payments.filter(x => x && typeof x === 'object').map(migratePayment); }
+                catch (e) { console.error('Remote payment migration failed', e); }
+              }
+              if (Array.isArray(data.expenses)) initExpenses = data.expenses;
+              if (Array.isArray(data.staff)) initStaff = data.staff;
+              if (data.auth && data.auth.passphrase_hash) initHash = data.auth.passphrase_hash;
+              recordSync();
+              setSyncStatus('connected');
+            } else {
+              setSyncStatus('connected');
+            }
+          } catch (e) {
+            console.warn('GitHub silent pull failed', e);
+            setSyncStatus('offline');
+            // Don't toast on first load — it would block the UI behind a modal
+          }
+        }
+
+        if (initConfig) setConfig(initConfig);
+        setExpenses(initExpenses);
+        setStaff(initStaff);
+        if (initFlats) {
+          setFlats(initFlats); setPayments(initPayments); setInitialized(true);
+        }
+        setPwHash(initHash);
+        setUnlocked(!initHash || auth.hasValidSession());
+
+        // 3. If not configured and not dismissed, popup
+        if (!github.isConfigured() && !localStorage.getItem('sjm1:gh:setupDismissed')) {
+          setTimeout(() => setGhOpen(true), 500);
+        }
+      } catch (err) {
+        console.error('App init crashed', err);
+        alert('Startup error: ' + (err.message || err) + '\n\nThe app will continue in safe mode. Check the browser console for details.');
+      } finally {
+        // ALWAYS clear loading, no matter what failed
+        clearTimeout(safetyTimeout);
+        setAuthReady(true);
+        setLoading(false);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
