@@ -129,37 +129,6 @@ const DEFAULT_RATES = {
 
 const PAYMENT_MODES = ['UPI', 'Bank Transfer', 'Cash', 'Cheque', 'Card', 'Other'];
 
-const EXPENSE_CATEGORIES = [
-  { id: 'salary', label: 'Staff Salary', color: 'teal' },
-  { id: 'security', label: 'Security & Guards', color: 'teal' },
-  { id: 'housekeeping', label: 'Housekeeping & Cleaning', color: 'teal' },
-  { id: 'gardening', label: 'Gardening & Landscape', color: 'moss' },
-  { id: 'plumbing', label: 'Plumbing', color: 'clay' },
-  { id: 'electrical', label: 'Electrical & Lighting', color: 'amber' },
-  { id: 'repairs', label: 'Repairs & Maintenance', color: 'clay' },
-  { id: 'renovation', label: 'Renovation & Painting', color: 'clay' },
-  { id: 'utilities', label: 'Utilities (Water/Power)', color: 'teal' },
-  { id: 'lift', label: 'Lift / Elevator AMC', color: 'clay' },
-  { id: 'generator', label: 'Generator / DG Set', color: 'clay' },
-  { id: 'pestcontrol', label: 'Pest Control', color: 'moss' },
-  { id: 'stationery', label: 'Stationery & Printing', color: 'ink' },
-  { id: 'meeting', label: 'Meetings & Refreshments', color: 'ink' },
-  { id: 'legal', label: 'Legal & Audit', color: 'ink' },
-  { id: 'bank', label: 'Bank Charges', color: 'ink' },
-  { id: 'event', label: 'Events / Festivals', color: 'moss' },
-  { id: 'cctv', label: 'CCTV / Security Equipment', color: 'teal' },
-  { id: 'fire', label: 'Fire Safety', color: 'crimson' },
-  { id: 'tax', label: 'Taxes & Govt Fees', color: 'ink' },
-  { id: 'other', label: 'Other / Miscellaneous', color: 'ink' },
-];
-const EXPENSE_CAT_MAP = Object.fromEntries(EXPENSE_CATEGORIES.map(c => [c.id, c]));
-
-const STAFF_ROLES = [
-  'Security Guard', 'Gardener', 'Plumber', 'Electrician',
-  'Cleaning Staff', 'Maid / Housekeeping', 'Manager / Supervisor',
-  'Lift Operator', 'Driver', 'Carpenter', 'Painter', 'Other',
-];
-
 /* ----- formatting helpers ----- */
 const inr = (n) => '₹' + (Number(n) || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
 const inrShort = (n) => {
