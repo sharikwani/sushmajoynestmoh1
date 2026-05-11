@@ -8765,6 +8765,20 @@
       "notes": "",
       "period": "2026-05",
       "recorded_at": "2026-05-11T16:07:54.051Z"
+    },
+    {
+      "id": "x7dp3m16ek1l",
+      "date": "2026-05-11",
+      "category": "Repairs",
+      "subcategory": "d tower",
+      "payee_name": "ererge",
+      "staff_id": null,
+      "amount": 2500,
+      "mode": "UPI",
+      "reference_no": "",
+      "notes": "",
+      "period": "2026-05",
+      "recorded_at": "2026-05-11T16:10:28.473Z"
     }
   ],
   "staff": [
@@ -8783,6 +8797,6 @@
   "auth": {
     "passphrase_hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
   },
-  "updated_at": "2026-05-11T16:09:13.647Z",
+  "updated_at": "2026-05-11T16:10:30.979Z",
   "device": "Windows NT 10.0; Win64; x64"
 }
