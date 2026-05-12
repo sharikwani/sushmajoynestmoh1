@@ -397,7 +397,6 @@ const auth = {
   isLocked: false,
   storedHash: null,
   setStoredHash(h) { this.storedHash = h; },
-  // session: 24h
   hasValidSession() {
     try {
       const s = JSON.parse(localStorage.getItem(K_AUTH_SESSION) || 'null');
@@ -410,6 +409,223 @@ const auth = {
     localStorage.setItem(K_AUTH_SESSION, JSON.stringify({ expiresAt: Date.now() + 24*3600*1000 }));
   },
   endSession() { localStorage.removeItem(K_AUTH_SESSION); },
+};
+
+/* ----- Crypto: AES-GCM encryption with PBKDF2-derived key from passphrase -----
+   Used to encrypt the data.json contents (and embedded GitHub token) so that
+   only the passphrase holder can read them, even if the file is publicly hosted.
+*/
+async function deriveAesKey(passphrase, salt) {
+  const km = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(passphrase), 'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 250000, hash: 'SHA-256' },
+    km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+  );
+}
+function b64encode(bytes) { return btoa(String.fromCharCode(...bytes)); }
+function b64decode(s) { return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
+
+const cipher = {
+  async encrypt(plaintext, passphrase) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveAesKey(passphrase, salt);
+    const ct = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv }, key, new TextEncoder().encode(plaintext)
+    );
+    return {
+      salt: b64encode(salt),
+      iv: b64encode(iv),
+      ciphertext: b64encode(new Uint8Array(ct)),
+    };
+  },
+  async decrypt({ salt, iv, ciphertext }, passphrase) {
+    const key = await deriveAesKey(passphrase, b64decode(salt));
+    const pt = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: b64decode(iv) }, key, b64decode(ciphertext)
+    );
+    return new TextDecoder().decode(pt);
+  },
+};
+
+/* ----- Vault: high-level "encrypted file on GitHub" abstraction -----
+   - One file on GitHub: data.json
+   - File contents: { version: 3, salt, iv, ciphertext, updated_at }
+   - Decrypts to: { github_token, config, flats, payments, expenses, staff }
+   - Auto-detects repo owner & name from window.location (works for GitHub Pages)
+*/
+const vault = {
+  // Currently-active credentials (in memory only)
+  token: null,
+  passphrase: null,
+  fileSha: null,    // GitHub file SHA for optimistic concurrency
+
+  // Auto-detect repo from `https://OWNER.github.io/REPO/...`
+  detectRepoFromURL() {
+    const host = location.hostname;
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    if (host.endsWith('.github.io') && pathParts.length > 0) {
+      return { owner: host.split('.')[0], repo: pathParts[0], branch: 'main', path: 'data.json' };
+    }
+    return null;
+  },
+
+  // Repo info — defaults to auto-detected, can be overridden via setRepo
+  _repo: null,
+  getRepo() {
+    if (this._repo) return this._repo;
+    // try stored override
+    try {
+      const saved = localStorage.getItem('sjm1:vault:repo');
+      if (saved) { this._repo = JSON.parse(saved); return this._repo; }
+    } catch (e) {}
+    this._repo = this.detectRepoFromURL();
+    return this._repo;
+  },
+  setRepo(r) {
+    this._repo = r;
+    if (r) localStorage.setItem('sjm1:vault:repo', JSON.stringify(r));
+    else   localStorage.removeItem('sjm1:vault:repo');
+  },
+
+  // Unauthenticated raw fetch — works for public repos, no token needed
+  async fetchRaw() {
+    const r = this.getRepo();
+    if (!r) throw new Error('Could not determine GitHub repo. Are you opening this on a github.io URL?');
+    // cache-bust to always get latest
+    const url = `https://raw.githubusercontent.com/${r.owner}/${r.repo}/${r.branch}/${r.path}?t=${Date.now()}`;
+    const resp = await fetch(url, { cache: 'no-cache' });
+    if (resp.status === 404) return null;
+    if (!resp.ok) throw new Error(`Could not fetch data file: HTTP ${resp.status}. Is the repo public?`);
+    return await resp.text();
+  },
+
+  // Authenticated fetch (returns content + sha for writes)
+  async fetchWithSha(tokenOverride = null) {
+    const r = this.getRepo();
+    const token = tokenOverride || this.token;
+    if (!token) throw new Error('No token');
+    const url = `https://api.github.com/repos/${r.owner}/${r.repo}/contents/${encodeURIComponent(r.path)}?ref=${r.branch}`;
+    const resp = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+      cache: 'no-cache',
+    });
+    if (resp.status === 404) return { text: null, sha: null };
+    if (!resp.ok) {
+      if (resp.status === 401) throw new Error('Invalid GitHub token');
+      throw new Error(`GitHub ${resp.status}: ${(await resp.text()).slice(0, 160)}`);
+    }
+    const data = await resp.json();
+    const text = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
+    this.fileSha = data.sha;
+    return { text, sha: data.sha };
+  },
+
+  // Write encrypted file (creates or updates with optimistic concurrency retry)
+  async writeFile(jsonText, commitMessage) {
+    const r = this.getRepo();
+    if (!this.token) throw new Error('No token in memory — cannot write');
+    const tryPut = async () => {
+      const body = {
+        message: commitMessage || `Update data ${new Date().toISOString()}`,
+        content: btoa(unescape(encodeURIComponent(jsonText))),
+        branch: r.branch,
+      };
+      if (this.fileSha) body.sha = this.fileSha;
+      const resp = await fetch(`https://api.github.com/repos/${r.owner}/${r.repo}/contents/${encodeURIComponent(r.path)}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          Accept: 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+      return resp;
+    };
+    let resp = await tryPut();
+    if (resp.status === 409 || resp.status === 422) {
+      // SHA mismatch — refresh and retry once
+      await this.fetchWithSha();
+      resp = await tryPut();
+    }
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`GitHub ${resp.status}: ${errText.slice(0, 200)}`);
+    }
+    const data = await resp.json();
+    if (data.content && data.content.sha) this.fileSha = data.content.sha;
+    return data;
+  },
+
+  // High-level: load encrypted file from public repo, decrypt with passphrase
+  // Returns { data, isFirstTime, isLegacy } — data is null if first time
+  async load() {
+    const text = await this.fetchRaw();
+    if (!text) return { data: null, isFirstTime: true, isLegacy: false };
+    let parsed;
+    try { parsed = JSON.parse(text); }
+    catch (e) { throw new Error('data.json on GitHub is not valid JSON'); }
+    return { data: parsed, isFirstTime: false, isLegacy: parsed.version !== 3 };
+  },
+
+  // Decrypt the vault file's ciphertext with the given passphrase
+  async unlock(vaultFile, passphrase) {
+    if (vaultFile.version !== 3) throw new Error('Not an encrypted vault');
+    let plaintext;
+    try {
+      plaintext = await cipher.decrypt(
+        { salt: vaultFile.salt, iv: vaultFile.iv, ciphertext: vaultFile.ciphertext },
+        passphrase
+      );
+    } catch (e) {
+      throw new Error('Wrong passphrase');
+    }
+    const inner = JSON.parse(plaintext);
+    // store credentials in memory for subsequent writes
+    this.token = inner.github_token;
+    this.passphrase = passphrase;
+    // Also fetch SHA so writes work (authenticated this time)
+    try { await this.fetchWithSha(); } catch (e) { /* will retry on first save */ }
+    return inner;
+  },
+
+  // Encrypt a snapshot and push to GitHub
+  async save(snapshotData, commitMessage) {
+    if (!this.passphrase) throw new Error('Vault is locked — cannot save');
+    if (!this.token) throw new Error('No GitHub token in memory');
+    // Ensure the token stays inside the encrypted blob
+    const inner = { ...snapshotData, github_token: this.token };
+    const encrypted = await cipher.encrypt(JSON.stringify(inner), this.passphrase);
+    const file = {
+      version: 3,
+      ...encrypted,
+      updated_at: new Date().toISOString(),
+      _note: 'AES-GCM encrypted. Passphrase required to read. Do not edit manually.',
+    };
+    return this.writeFile(JSON.stringify(file, null, 2), commitMessage);
+  },
+
+  // First-time setup: encrypt fresh data + token, push to GitHub for the first time
+  async initialize(token, passphrase, initialData) {
+    this.token = token;
+    this.passphrase = passphrase;
+    this.fileSha = null;
+    // Also test the token works against the repo
+    await this.fetchWithSha(token); // sets fileSha if exists
+    return this.save(initialData, 'Initial vault setup');
+  },
+
+  // Forget in-memory credentials (lock)
+  lock() {
+    this.token = null;
+    this.passphrase = null;
+    this.fileSha = null;
+  },
+
+  isUnlocked() { return !!(this.token && this.passphrase); },
 };
 
 /* ----- flat generation ----- */
@@ -2429,8 +2645,7 @@ function Reports({ flats, payments, currentPeriod, config }) {
    =========================================================== */
 
 function Settings({ config, setConfig, flats, setFlats, payments, setPayments, expenses, setExpenses, staff, setStaff, toast,
-                    syncStatus, lastSync, onOpenSync, onForgetSync, onPullSync, onPushSync,
-                    pwHash, onSetPassword, onRemovePassword }) {
+                    syncStatus, lastSync, onChangePassphrase, onChangeToken, onForceSync }) {
   const [draft, setDraft] = useState(config);
   useEffect(() => setDraft(config), [config]);
   const fileRef = useRef();
@@ -2476,11 +2691,18 @@ function Settings({ config, setConfig, flats, setFlats, payments, setPayments, e
   };
 
   const resetAll = async () => {
-    if (!confirm('Delete all data and reinitialise the society from scratch? This cannot be undone.')) return;
-    if (!confirm('Are you absolutely sure? Type-confirm by pressing OK again.')) return;
-    await storage.del(K_FLATS); await storage.del(K_PAYMENTS); await storage.del(K_CONFIG);
-    await storage.del(K_EXPENSES); await storage.del(K_STAFF);
-    location.reload();
+    if (!confirm('Reset everything? This will erase all flats, payments, expenses and staff on GitHub.\n\nThe data file will be wiped and you will need to re-initialise the society.')) return;
+    if (!confirm('Are you absolutely sure? This cannot be undone. Type-confirm by pressing OK.')) return;
+    try {
+      // Save empty state to GitHub
+      const empty = { config: DEFAULT_CONFIG, flats: [], payments: [], expenses: [], staff: [] };
+      await vault.save(empty, 'Reset all data');
+      // Clear local cache
+      ['sjm1:flats:v1','sjm1:payments:v1','sjm1:config:v1','sjm1:expenses:v1','sjm1:staff:v1','sjm1:auth:session','sjm1:vault:repo'].forEach(k => localStorage.removeItem(k));
+      location.reload();
+    } catch (e) {
+      alert('Reset failed: ' + e.message);
+    }
   };
 
   const syncTimeAgo = (() => {
@@ -2512,62 +2734,41 @@ function Settings({ config, setConfig, flats, setFlats, payments, setPayments, e
         <div className="mt-4 flex justify-end"><Button onClick={save}>Save</Button></div>
       </div>
 
-      {/* GitHub sync */}
+      {/* Encrypted Vault */}
       <div className="bg-ivory-warm rounded-xl ring-soft p-5">
         <div className="flex items-center justify-between mb-3">
-          <div className="font-display text-lg text-teal-500 flex items-center gap-2"><Icon name="cloud" /> GitHub Sync</div>
+          <div className="font-display text-lg text-teal-500 flex items-center gap-2"><Icon name="lock" /> Encrypted Vault</div>
           <SyncStatusBadge status={syncStatus} lastSync={lastSync} onClick={() => {}} />
         </div>
-        {!github.isConfigured() ? (
-          <div>
-            <p className="text-sm text-ink-soft mb-3">Not configured. Connect to back up all data to a GitHub repository automatically. Works across devices that share the same GitHub token.</p>
-            <Button onClick={onOpenSync}><Icon name="cloud" /> Set up GitHub sync</Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div className="bg-ivory-deep/40 rounded-md p-3 ring-soft">
-                <div className="text-[10px] uppercase text-ink-muted font-semibold tracking-wider">Repository</div>
-                <div className="font-mono text-[12px] font-semibold text-ink mt-0.5 truncate">{github.config.owner}/{github.config.repo}</div>
-              </div>
-              <div className="bg-ivory-deep/40 rounded-md p-3 ring-soft">
-                <div className="text-[10px] uppercase text-ink-muted font-semibold tracking-wider">Last sync</div>
-                <div className="font-semibold text-ink mt-0.5">{syncTimeAgo}</div>
-              </div>
-              <div className="bg-ivory-deep/40 rounded-md p-3 ring-soft md:col-span-2">
-                <div className="text-[10px] uppercase text-ink-muted font-semibold tracking-wider">Data file</div>
-                <div className="font-mono text-[12px] font-semibold text-ink mt-0.5">{github.config.path} <span className="text-ink-muted font-normal">(branch: {github.config.branch})</span></div>
-                <a href={`https://github.com/${github.config.owner}/${github.config.repo}/blob/${github.config.branch}/${github.config.path}`} target="_blank" rel="noopener noreferrer" className="text-[11px] text-teal-500 underline mt-1 inline-block">Open on GitHub →</a>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div className="bg-ivory-deep/40 rounded-md p-3 ring-soft">
+              <div className="text-[10px] uppercase text-ink-muted font-semibold tracking-wider">Repository</div>
+              <div className="font-mono text-[12px] font-semibold text-ink mt-0.5 truncate">
+                {vault.getRepo() ? `${vault.getRepo().owner}/${vault.getRepo().repo}` : '—'}
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="soft" onClick={onPullSync}><Icon name="download" /> Pull from GitHub (overwrite local)</Button>
-              <Button variant="soft" onClick={onPushSync}><Icon name="upload" /> Push to GitHub (overwrite remote)</Button>
-              <Button variant="ghost" className="text-crimson-500 hover:bg-crimson-500/10" onClick={() => { if (confirm('Forget the saved GitHub token & repo info? You will need to set it up again.')) onForgetSync(); }}>Forget credentials</Button>
+            <div className="bg-ivory-deep/40 rounded-md p-3 ring-soft">
+              <div className="text-[10px] uppercase text-ink-muted font-semibold tracking-wider">Last sync</div>
+              <div className="font-semibold text-ink mt-0.5">{syncTimeAgo}</div>
+            </div>
+            <div className="bg-ivory-deep/40 rounded-md p-3 ring-soft md:col-span-2">
+              <div className="text-[10px] uppercase text-ink-muted font-semibold tracking-wider">Data file</div>
+              <div className="font-mono text-[12px] font-semibold text-ink mt-0.5">data.json <span className="text-ink-muted font-normal">(AES-256 encrypted, branch: {vault.getRepo()?.branch || 'main'})</span></div>
+              {vault.getRepo() && (
+                <a href={`https://github.com/${vault.getRepo().owner}/${vault.getRepo().repo}/blob/${vault.getRepo().branch}/data.json`} target="_blank" rel="noopener noreferrer" className="text-[11px] text-teal-500 underline mt-1 inline-block font-medium">Open on GitHub →</a>
+              )}
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Access password */}
-      <div className="bg-ivory-warm rounded-xl ring-soft p-5">
-        <div className="font-display text-lg text-teal-500 mb-3 flex items-center gap-2"><Icon name="lock" /> Access Password</div>
-        {!pwHash ? (
-          <div>
-            <p className="text-sm text-ink-soft mb-3">No password set. Anyone with this device can open the portal. Set a password so the treasurer's data is protected on this device.</p>
-            <Button onClick={onSetPassword}><Icon name="lock" /> Set Access Password</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="soft" onClick={onForceSync}><Icon name="upload" /> Force push to GitHub</Button>
+            <Button variant="soft" onClick={onChangePassphrase}><Icon name="lock" /> Change passphrase</Button>
+            <Button variant="soft" onClick={onChangeToken}><Icon name="refresh" /> Rotate GitHub token</Button>
           </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="bg-moss-500/10 ring-1 ring-moss-500/30 text-moss-500 rounded-md px-3 py-2 text-xs flex items-center gap-2">
-              <Icon name="check" className="w-4 h-4" /> Password protection is active. Session expires after 24 hours of inactivity.
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="soft" onClick={onSetPassword}><Icon name="edit" /> Change password</Button>
-              <Button variant="ghost" className="text-crimson-500 hover:bg-crimson-500/10" onClick={onRemovePassword}>Remove password</Button>
-            </div>
+          <div className="text-[11px] text-ink-soft bg-clay-500/5 ring-1 ring-clay-500/20 rounded p-3">
+            <span className="font-semibold text-clay-500">Forgot passphrase?</span> The data cannot be recovered. You would need to delete <code className="text-[11px] bg-ivory-deep px-1 rounded">data.json</code> from your GitHub repo and start fresh.
           </div>
-        )}
+        </div>
       </div>
 
       <div className="bg-ivory-warm rounded-xl ring-soft p-5">
@@ -2655,211 +2856,223 @@ function SyncStatusBadge({ status, lastSync, onClick }) {
   );
 }
 
-function GitHubSetupModal({ open, onClose, onConnected, toast, hasLocalData }) {
-  const [step, setStep] = useState('intro'); // intro | instructions
-  const [token, setToken] = useState(github.config.token || '');
-  const [owner, setOwner] = useState(github.config.owner || '');
-  const [repo, setRepo] = useState(github.config.repo || '');
-  const [branch, setBranch] = useState(github.config.branch || 'main');
-  const [path, setPath] = useState(github.config.path || 'data.json');
+/* ===========================================================
+   VAULT — FIRST-TIME SETUP, LOCK SCREEN, MIGRATION
+   =========================================================== */
+
+// First-time setup: collect passphrase + GitHub token, initialize vault on GitHub.
+function VaultSetupModal({ open, mode, onComplete, onSkip, toast, existingData }) {
+  // mode: 'first-time' (no vault exists) | 'migrate' (legacy plain data on GitHub)
+  const [step, setStep] = useState('intro'); // intro | passphrase | token | wiring | done
+  const [pass1, setPass1] = useState('');
+  const [pass2, setPass2] = useState('');
+  const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [err, setErr] = useState('');
+
+  // Auto-detect repo from URL
+  const detected = vault.detectRepoFromURL();
+  const [owner, setOwner] = useState(detected?.owner || '');
+  const [repo, setRepo] = useState(detected?.repo || '');
+  const [branch, setBranch] = useState('main');
 
   useEffect(() => {
     if (open) {
-      setStep('intro'); setError('');
-      setToken(github.config.token || '');
-      setOwner(github.config.owner || '');
-      setRepo(github.config.repo || '');
-      setBranch(github.config.branch || 'main');
-      setPath(github.config.path || 'data.json');
+      setStep('intro'); setPass1(''); setPass2(''); setToken(''); setErr(''); setBusy(false);
     }
   }, [open]);
 
-  const copy = (text) => { navigator.clipboard?.writeText(text); toast('Copied', 'info'); };
-
-  const connect = async () => {
-    if (!token.trim() || !owner.trim() || !repo.trim()) {
-      setError('Token, owner and repo are required.');
-      return;
-    }
-    setBusy(true); setError('');
-    try {
-      github.saveConfig({
-        token: token.trim(), owner: owner.trim(), repo: repo.trim(),
-        branch: (branch || 'main').trim(), path: (path || 'data.json').trim(),
-      });
-      // verify
-      const info = await github.testConnection();
-      toast(`Connected to ${info.full_name}`, 'success');
-      await onConnected();
-      onClose();
-    } catch (e) {
-      setError(e.message || String(e));
-    } finally { setBusy(false); }
+  const proceedToToken = () => {
+    setErr('');
+    if (pass1.length < 8) { setErr('Passphrase should be at least 8 characters'); return; }
+    if (pass1 !== pass2) { setErr('Passphrases do not match'); return; }
+    setStep('token');
   };
 
-  const dismiss = (permanently) => {
-    if (permanently) localStorage.setItem('sjm1:gh:setupDismissed', '1');
-    onClose();
+  const finish = async () => {
+    setErr(''); setBusy(true);
+    try {
+      if (!token.trim().startsWith('ghp_') && !token.trim().startsWith('github_pat_')) {
+        throw new Error('Token should start with "ghp_" or "github_pat_". Did you paste the full token?');
+      }
+      if (!owner.trim() || !repo.trim()) {
+        throw new Error('GitHub username and repository name are required');
+      }
+      vault.setRepo({ owner: owner.trim(), repo: repo.trim(), branch: branch.trim() || 'main', path: 'data.json' });
+
+      const initialData = existingData || {
+        config: DEFAULT_CONFIG,
+        flats: [],
+        payments: [],
+        expenses: [],
+        staff: [],
+      };
+      await vault.initialize(token.trim(), pass1, initialData);
+      setStep('done');
+      setBusy(false);
+      // small celebration moment
+      setTimeout(() => { onComplete(initialData); }, 1500);
+    } catch (e) {
+      console.error('Vault init failed', e);
+      setErr(e.message || String(e));
+      setBusy(false);
+    }
   };
 
   if (!open) return null;
+  const isMigrate = mode === 'migrate';
 
   return (
-    <Modal open onClose={() => dismiss(false)} title="Sync to GitHub" maxWidth="max-w-2xl">
-      {step === 'intro' && (
-        <div className="space-y-4 text-sm">
-          <p className="text-ink-soft">Back up the society's data automatically to a GitHub repository. Every change auto-commits within a few seconds, with full version history. Open the app from any device — pull the latest state instantly.</p>
-
-          <div className="bg-ivory-deep/50 ring-soft rounded-lg p-4 space-y-2">
-            <div className="font-display text-base text-teal-500">How it works</div>
-            <ul className="space-y-1.5 text-ink-soft list-disc pl-5 text-[13px]">
-              <li>A single file <code className="font-mono text-xs bg-ivory-warm px-1 rounded">data.json</code> in your repo holds all flats, payments, expenses, and staff data.</li>
-              <li>Every change auto-commits within 2.5 seconds with a timestamp.</li>
-              <li>Full audit trail: every payment is a git commit you can review.</li>
-              <li><span className="font-semibold text-clay-600">Recommendation:</span> Use a private repo for the data file to keep society information confidential.</li>
-            </ul>
+    <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center px-4 anim-fade">
+      <div className="bg-ivory-warm rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl anim-slide">
+        <div className="p-6 border-b border-teal-500/10">
+          <div className="text-[10px] tracking-[0.3em] uppercase text-clay-500 mb-1 font-semibold">{isMigrate ? 'Migrate to Encrypted Vault' : 'One-Time Setup'}</div>
+          <div className="font-display text-2xl text-teal-500">
+            {step === 'done' ? '✓ All set' : 'Connect this portal to your data file'}
           </div>
-
-          <div className="bg-clay-500/10 ring-1 ring-clay-500/20 rounded-lg p-4 text-[13px]">
-            <div className="font-semibold text-clay-600 mb-1">One-time setup (~3 minutes)</div>
-            <p className="text-ink-soft">You need a fine-grained Personal Access Token from GitHub. The wizard walks you through it.</p>
-          </div>
-
-          <div className="flex flex-wrap gap-2 justify-end pt-2">
-            <Button variant="ghost" onClick={() => dismiss(true)}>Don't ask again</Button>
-            <Button variant="ghost" onClick={() => dismiss(false)}>Maybe later</Button>
-            <Button onClick={() => setStep('instructions')}>{github.isConfigured() ? 'Reconfigure' : 'Set up GitHub sync'}</Button>
-          </div>
+          <p className="text-sm text-ink-soft mt-1">
+            {isMigrate
+              ? 'We found unencrypted data on GitHub. Set a passphrase to encrypt it. Anyone with the URL would otherwise be able to read it.'
+              : 'After this setup, you (or anyone else with the passphrase) can open this portal on any device with just the passphrase — no token needed.'}
+          </p>
         </div>
-      )}
 
-      {step === 'instructions' && (
-        <div className="space-y-4 text-sm">
-          <ol className="space-y-3 text-[13px]">
-            <li className="flex gap-3">
-              <span className="shrink-0 w-7 h-7 rounded-full bg-teal-500 text-ivory-warm flex items-center justify-center text-xs font-bold">1</span>
-              <div className="flex-1">
-                <div className="font-medium text-ink mb-1">Create a private repo for the data</div>
-                <div className="text-ink-soft">Go to <a href="https://github.com/new" target="_blank" rel="noopener noreferrer" className="text-teal-500 underline font-medium">github.com/new</a>, name it something like <code className="font-mono text-xs bg-ivory-deep px-1 rounded">sushmajoynest-data</code>, choose <span className="font-semibold">Private</span>, click <span className="font-semibold">Create repository</span>. Skip adding a README — keep it empty.</div>
-              </div>
-            </li>
-            <li className="flex gap-3">
-              <span className="shrink-0 w-7 h-7 rounded-full bg-teal-500 text-ivory-warm flex items-center justify-center text-xs font-bold">2</span>
-              <div className="flex-1">
-                <div className="font-medium text-ink mb-1">Generate a fine-grained Personal Access Token</div>
-                <div className="text-ink-soft">Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer" className="text-teal-500 underline font-medium">github.com/settings/personal-access-tokens/new</a>. Fill in:</div>
-                <ul className="mt-1.5 ml-4 list-disc space-y-0.5 text-[12px] text-ink-soft">
-                  <li><span className="font-semibold">Token name:</span> Sushma Maintenance App</li>
-                  <li><span className="font-semibold">Expiration:</span> 1 year (or "No expiration" if your org allows)</li>
-                  <li><span className="font-semibold">Repository access:</span> Only select repositories → pick the data repo you just made</li>
-                  <li><span className="font-semibold">Permissions → Repository permissions:</span> <span className="font-mono text-[11px] bg-ivory-deep px-1 rounded">Contents</span> → <span className="font-mono text-[11px] bg-ivory-deep px-1 rounded">Read and write</span></li>
-                </ul>
-                <div className="text-ink-soft mt-1.5">Click <span className="font-semibold">Generate token</span> at the bottom. Copy the token immediately (starts with <code className="font-mono text-[11px]">github_pat_</code>) — GitHub only shows it once.</div>
-              </div>
-            </li>
-            <li className="flex gap-3">
-              <span className="shrink-0 w-7 h-7 rounded-full bg-teal-500 text-ivory-warm flex items-center justify-center text-xs font-bold">3</span>
-              <div className="flex-1">
-                <div className="font-medium text-ink mb-1">Fill in the details below</div>
-              </div>
-            </li>
-          </ol>
-
-          <div className="bg-ivory-deep/50 ring-soft rounded-lg p-4 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="GitHub username (owner)" className="col-span-2">
-                <Input value={owner} onChange={e => setOwner(e.target.value)} placeholder="e.g. sharikwani" />
-              </Field>
-              <Field label="Repository name">
-                <Input value={repo} onChange={e => setRepo(e.target.value)} placeholder="e.g. sushmajoynest-data" />
-              </Field>
-              <Field label="Branch" hint="usually 'main'">
-                <Input value={branch} onChange={e => setBranch(e.target.value)} placeholder="main" />
-              </Field>
-              <Field label="Data file path" hint="usually data.json" className="col-span-2">
-                <Input value={path} onChange={e => setPath(e.target.value)} placeholder="data.json" />
-              </Field>
-              <Field label="Personal Access Token (PAT)" hint="kept only in this browser; never sent anywhere except api.github.com" className="col-span-2">
-                <Input type="password" value={token} onChange={e => setToken(e.target.value)} placeholder="github_pat_..." className="font-mono text-xs" />
-              </Field>
-            </div>
+        <div className="p-6 space-y-5">
+          {/* Step indicator */}
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider font-semibold">
+            <span className={step === 'intro' ? 'text-teal-500' : 'text-ink-muted'}>1 · Intro</span>
+            <span className="text-ink-muted">·</span>
+            <span className={step === 'passphrase' ? 'text-teal-500' : step === 'token' || step === 'done' ? 'text-moss-500' : 'text-ink-muted'}>2 · Passphrase</span>
+            <span className="text-ink-muted">·</span>
+            <span className={step === 'token' ? 'text-teal-500' : step === 'done' ? 'text-moss-500' : 'text-ink-muted'}>3 · GitHub</span>
+            <span className="text-ink-muted">·</span>
+            <span className={step === 'done' ? 'text-moss-500' : 'text-ink-muted'}>4 · Done</span>
           </div>
 
-          {hasLocalData && (
-            <div className="text-[12px] bg-teal-500/10 ring-1 ring-teal-500/30 text-ink-soft rounded-md px-3 py-2">
-              <span className="font-semibold text-teal-600">Note:</span> You already have local data on this device. After connecting, the app will <span className="font-semibold">upload your local data to GitHub</span> the first time. (If you already have data on GitHub from another device, use <span className="font-semibold">Settings → Pull from GitHub</span> after connecting to overwrite local.)
+          {step === 'intro' && (
+            <div className="space-y-4">
+              <div className="bg-ivory-deep/40 ring-soft rounded-lg p-4 text-[13px] text-ink-soft space-y-2">
+                <div className="font-display text-base text-teal-500">How this works</div>
+                <ul className="space-y-1.5 list-disc pl-5">
+                  <li>All data — flats, payments, expenses, staff — lives in one encrypted file on GitHub: <code className="text-xs bg-ivory-warm rounded px-1">data.json</code></li>
+                  <li>Encrypted with AES-256 using your passphrase. Public visibility is fine — the file is unreadable without it.</li>
+                  <li>Your GitHub token is stored <em>inside</em> the encrypted file, so any device just needs the passphrase.</li>
+                  <li>Auto-saves to GitHub a few seconds after every change.</li>
+                </ul>
+              </div>
+              <div className="bg-clay-500/10 ring-1 ring-clay-500/20 rounded-lg p-4 text-[13px] text-ink-soft">
+                <div className="font-medium text-clay-500 mb-1">⚠ Keep your passphrase safe</div>
+                <p>If you lose the passphrase, the data cannot be recovered — only re-created from a fresh setup. Write it down somewhere outside the app.</p>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                {!isMigrate && onSkip && <Button variant="ghost" onClick={onSkip}>Skip for now</Button>}
+                <Button onClick={() => setStep('passphrase')}>Get started →</Button>
+              </div>
             </div>
           )}
 
-          {error && <div className="text-xs bg-crimson-500/10 ring-1 ring-crimson-500/30 text-crimson-600 rounded-md px-3 py-2 font-medium">{error}</div>}
+          {step === 'passphrase' && (
+            <div className="space-y-4">
+              <p className="text-sm text-ink-soft">
+                Pick a passphrase. Strong is better — this is the only thing standing between data and the public internet. Mix words and numbers, at least 8 characters.
+              </p>
+              <Field label="Passphrase">
+                <Input type="password" value={pass1} onChange={e => { setPass1(e.target.value); setErr(''); }} autoFocus placeholder="e.g. green-cottage-19-rupees" />
+              </Field>
+              <Field label="Confirm passphrase">
+                <Input type="password" value={pass2} onChange={e => { setPass2(e.target.value); setErr(''); }} onKeyDown={e => e.key === 'Enter' && proceedToToken()} placeholder="Re-type to confirm" />
+              </Field>
+              {err && <div className="text-xs bg-crimson-500/10 ring-1 ring-crimson-500/30 text-crimson-600 rounded px-3 py-2 font-medium">{err}</div>}
+              <div className="flex justify-between pt-1">
+                <Button variant="ghost" onClick={() => setStep('intro')}>← Back</Button>
+                <Button onClick={proceedToToken}>Continue →</Button>
+              </div>
+            </div>
+          )}
 
-          <div className="flex flex-wrap gap-2 justify-between pt-2">
-            <Button variant="ghost" onClick={() => setStep('intro')}>← Back</Button>
-            <Button onClick={connect} disabled={busy}>
-              {busy ? 'Connecting…' : 'Connect to GitHub'}
-            </Button>
-          </div>
-        </div>
-      )}
-    </Modal>
-  );
-}
+          {step === 'token' && (
+            <div className="space-y-4 text-sm">
+              <p className="text-ink-soft">
+                Now create a one-time GitHub token. After this, the token is encrypted inside the data file and you won't need it again on any device.
+              </p>
 
-/* ===========================================================
-   LOGIN / SET PASSWORD
-   =========================================================== */
+              <div className="bg-ivory-deep/40 ring-soft rounded-lg p-4 space-y-3 text-[13px] text-ink-soft">
+                <div className="font-display text-base text-teal-500">Quick steps</div>
+                <ol className="space-y-1.5 list-decimal pl-5">
+                  <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer" className="text-teal-500 underline font-medium">github.com/settings/personal-access-tokens/new</a></li>
+                  <li>Token name: <code className="bg-ivory-warm px-1 rounded">Society Maintenance Portal</code></li>
+                  <li>Expiration: <strong>No expiration</strong> (or 1 year — you can rotate)</li>
+                  <li>Repository access: <strong>Only select repositories</strong> → pick <code className="bg-ivory-warm px-1 rounded">{repo || 'your-repo'}</code></li>
+                  <li>Permissions → Repository permissions → <strong>Contents: Read and write</strong></li>
+                  <li>Click <strong>Generate token</strong>, copy it (starts with <code className="bg-ivory-warm px-1 rounded">github_pat_</code>) and paste below</li>
+                </ol>
+              </div>
 
-function SetPasswordModal({ open, onSet, onSkip }) {
-  const [p1, setP1] = useState('');
-  const [p2, setP2] = useState('');
-  const [err, setErr] = useState('');
-  const submit = async () => {
-    if (p1.length < 6) { setErr('Password must be at least 6 characters'); return; }
-    if (p1 !== p2) { setErr('Passwords do not match'); return; }
-    const hash = await sha256Hex(p1);
-    onSet(hash);
-  };
-  if (!open) return null;
-  return (
-    <Modal open onClose={() => {}} title="Protect this portal" maxWidth="max-w-md">
-      <div className="space-y-4 text-sm">
-        <p className="text-ink-soft">Set a passphrase that the treasurer (and other committee members with access) will use to open the portal. This adds a second layer of protection on top of the GitHub token.</p>
-        <Field label="New passphrase"><Input type="password" value={p1} onChange={e => setP1(e.target.value)} placeholder="At least 6 characters" autoFocus /></Field>
-        <Field label="Confirm passphrase"><Input type="password" value={p2} onChange={e => setP2(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} /></Field>
-        {err && <div className="text-xs text-crimson-600 bg-crimson-500/10 rounded px-3 py-2 ring-1 ring-crimson-500/30 font-medium">{err}</div>}
-        <div className="flex justify-between pt-1">
-          <Button variant="ghost" onClick={onSkip}>Skip for now</Button>
-          <Button onClick={submit}><Icon name="lock" /> Set passphrase</Button>
+              <Field label="GitHub Personal Access Token">
+                <Input type="password" value={token} onChange={e => { setToken(e.target.value); setErr(''); }} placeholder="github_pat_..." />
+              </Field>
+
+              <div className="grid grid-cols-3 gap-2">
+                <Field label="GitHub username"><Input value={owner} onChange={e => setOwner(e.target.value)} /></Field>
+                <Field label="Repository"><Input value={repo} onChange={e => setRepo(e.target.value)} /></Field>
+                <Field label="Branch"><Input value={branch} onChange={e => setBranch(e.target.value)} placeholder="main" /></Field>
+              </div>
+              <div className="text-[11px] text-ink-muted">Auto-detected from this page's URL. Override if data lives in a different repo than this app.</div>
+
+              {err && <div className="text-xs bg-crimson-500/10 ring-1 ring-crimson-500/30 text-crimson-600 rounded px-3 py-2 font-medium">{err}</div>}
+
+              <div className="flex justify-between pt-1">
+                <Button variant="ghost" onClick={() => setStep('passphrase')} disabled={busy}>← Back</Button>
+                <Button onClick={finish} disabled={busy}>
+                  {busy ? 'Encrypting & uploading…' : (isMigrate ? 'Migrate & encrypt' : 'Initialize vault')}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {step === 'done' && (
+            <div className="text-center py-8 anim-fade">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-moss-500/10 ring-2 ring-moss-500 flex items-center justify-center">
+                <Icon name="check" className="w-8 h-8 text-moss-500" />
+              </div>
+              <div className="font-display text-2xl text-teal-500 mb-2">Vault ready</div>
+              <p className="text-sm text-ink-soft max-w-md mx-auto">
+                Your data is encrypted on GitHub. From now on, just enter the passphrase to access it from any device.
+              </p>
+            </div>
+          )}
         </div>
       </div>
-    </Modal>
+    </div>
   );
 }
 
-function LoginGate({ storedHash, society, onUnlock, onReset }) {
+// Vault lock screen — fetches encrypted vault file, decrypts on passphrase submit
+function VaultLockScreen({ society, vaultFile, onUnlock, onReset, onRefetch }) {
   const [pw, setPw] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+
   const submit = async () => {
-    setBusy(true);
-    const h = await sha256Hex(pw);
-    if (h === storedHash) {
+    if (!pw) return;
+    setBusy(true); setErr('');
+    try {
+      const inner = await vault.unlock(vaultFile, pw);
       auth.startSession();
-      onUnlock();
-    } else {
-      setErr('Incorrect passphrase');
+      onUnlock(inner);
+    } catch (e) {
+      setErr(e.message === 'Wrong passphrase' ? 'Incorrect passphrase. Try again.' : e.message);
+      setBusy(false);
     }
-    setBusy(false);
   };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 grain">
       <div className="bg-ivory-warm rounded-2xl ring-soft p-8 w-full max-w-sm shadow-xl">
         <div className="text-center mb-6">
-          <div className="text-[10px] tracking-[0.3em] uppercase text-clay-500 mb-2">A/RWA Treasury</div>
+          <div className="text-[10px] tracking-[0.3em] uppercase text-clay-500 mb-2 font-semibold">A/RWA Treasury</div>
           <div className="font-display text-2xl text-teal-500 leading-tight">{society || 'Sushma Joynest Moh 1'}</div>
-          <div className="text-xs text-ink-muted mt-1">Maintenance Portal</div>
+          <div className="text-xs text-ink-soft mt-1">Maintenance Portal</div>
         </div>
         <Field label="Passphrase">
           <Input
@@ -2869,22 +3082,118 @@ function LoginGate({ storedHash, society, onUnlock, onReset }) {
             onKeyDown={e => e.key === 'Enter' && submit()}
             autoFocus
             placeholder="Enter passphrase"
+            disabled={busy}
           />
         </Field>
-        {err && <div className="text-xs text-crimson-600 bg-crimson-500/10 rounded px-3 py-2 ring-1 ring-crimson-500/30 mt-3 font-medium">{err}</div>}
+        {err && <div className="text-xs bg-crimson-500/10 ring-1 ring-crimson-500/30 text-crimson-600 rounded px-3 py-2 mt-3 font-medium">{err}</div>}
         <Button onClick={submit} disabled={busy || !pw} className="w-full mt-4">
-          <Icon name="lock" /> {busy ? 'Verifying…' : 'Unlock'}
+          <Icon name="lock" /> {busy ? 'Decrypting…' : 'Unlock'}
         </Button>
-        {onReset && (
-          <div className="text-center mt-4">
-            <button onClick={onReset} className="text-[11px] text-ink-muted hover:text-crimson-500">Forgot passphrase? Reset everything</button>
-          </div>
-        )}
+        <div className="mt-4 flex justify-between text-[11px]">
+          <button onClick={onRefetch} className="text-teal-500 hover:underline">Refresh</button>
+          {onReset && (
+            <button onClick={onReset} className="text-ink-muted hover:text-crimson-500">Forgot passphrase?</button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
+// Change passphrase modal — re-encrypts vault with new passphrase
+function ChangePassphraseModal({ open, onClose, onChanged, toast, snapshotFn }) {
+  const [current, setCurrent] = useState('');
+  const [p1, setP1] = useState('');
+  const [p2, setP2] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  useEffect(() => { if (open) { setCurrent(''); setP1(''); setP2(''); setErr(''); } }, [open]);
+
+  const submit = async () => {
+    setErr('');
+    if (current !== vault.passphrase) { setErr('Current passphrase is incorrect'); return; }
+    if (p1.length < 8) { setErr('New passphrase should be at least 8 characters'); return; }
+    if (p1 !== p2) { setErr('New passphrases do not match'); return; }
+    setBusy(true);
+    try {
+      vault.passphrase = p1; // switch
+      const snap = snapshotFn();
+      await vault.save(snap, 'Change passphrase');
+      onChanged();
+      toast('Passphrase changed', 'success');
+      onClose();
+    } catch (e) {
+      setErr('Failed to save: ' + e.message);
+      vault.passphrase = current; // revert
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!open) return null;
+  return (
+    <Modal open onClose={onClose} title="Change Passphrase" maxWidth="max-w-md">
+      <div className="space-y-3 text-sm">
+        <Field label="Current passphrase"><Input type="password" value={current} onChange={e => setCurrent(e.target.value)} autoFocus /></Field>
+        <Field label="New passphrase"><Input type="password" value={p1} onChange={e => setP1(e.target.value)} /></Field>
+        <Field label="Confirm new passphrase"><Input type="password" value={p2} onChange={e => setP2(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} /></Field>
+        {err && <div className="text-xs bg-crimson-500/10 ring-1 ring-crimson-500/30 text-crimson-600 rounded px-3 py-2 font-medium">{err}</div>}
+        <div className="flex justify-between pt-2">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>Cancel</Button>
+          <Button onClick={submit} disabled={busy}>{busy ? 'Re-encrypting…' : 'Change passphrase'}</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// Change-token modal — re-encrypts vault with a new GitHub token (passphrase stays)
+function ChangeTokenModal({ open, onClose, onChanged, toast, snapshotFn }) {
+  const [token, setToken] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  useEffect(() => { if (open) { setToken(''); setErr(''); } }, [open]);
+  const submit = async () => {
+    setErr('');
+    if (!token.trim().startsWith('ghp_') && !token.trim().startsWith('github_pat_')) {
+      setErr('Token should start with "ghp_" or "github_pat_"');
+      return;
+    }
+    setBusy(true);
+    const oldToken = vault.token;
+    vault.token = token.trim();
+    try {
+      await vault.fetchWithSha(); // test
+      const snap = snapshotFn();
+      await vault.save(snap, 'Rotate GitHub token');
+      onChanged();
+      toast('GitHub token updated', 'success');
+      onClose();
+    } catch (e) {
+      vault.token = oldToken;
+      setErr('Failed: ' + e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (!open) return null;
+  return (
+    <Modal open onClose={onClose} title="Change GitHub Token" maxWidth="max-w-md">
+      <div className="space-y-3 text-sm">
+        <p className="text-ink-soft">Paste a new Personal Access Token. The old one will be replaced inside the encrypted vault.</p>
+        <Field label="New token">
+          <Input type="password" value={token} onChange={e => setToken(e.target.value)} placeholder="github_pat_..." autoFocus />
+        </Field>
+        {err && <div className="text-xs bg-crimson-500/10 ring-1 ring-crimson-500/30 text-crimson-600 rounded px-3 py-2 font-medium">{err}</div>}
+        <div className="flex justify-between pt-2">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>Cancel</Button>
+          <Button onClick={submit} disabled={busy}>{busy ? 'Updating…' : 'Update token'}</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
 /* ===========================================================
    STAFF & SALARIES
    =========================================================== */
@@ -3471,9 +3780,20 @@ function ExpensesView({ expenses, addExpense, updateExpense, deleteExpense, staf
    ROOT APP
    =========================================================== */
 
+
 function App() {
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
+  // ----- Stage of the app -----
+  // 'loading'        — fetching the vault file from GitHub
+  // 'load-error'     — vault fetch failed
+  // 'first-time'     — no vault file exists, show setup wizard
+  // 'migrate'        — old plain JSON found, migrate to encrypted
+  // 'locked'         — vault exists, waiting for passphrase
+  // 'ready'          — vault unlocked, app is usable
+  const [stage, setStage] = useState('loading');
+  const [vaultFile, setVaultFile] = useState(null); // raw vault file from GitHub
+  const [loadError, setLoadError] = useState('');
+  const [legacyData, setLegacyData] = useState(null); // for migration
+
   const [flats, setFlats] = useState([]);
   const [payments, setPayments] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -3483,338 +3803,274 @@ function App() {
   const [currentPeriod, setCurrentPeriod] = useState(getCurrentPeriod());
   const [toast, setToast] = useState(null);
 
-  // Auth state
-  const [authReady, setAuthReady] = useState(false);     // finished checking auth
-  const [unlocked, setUnlocked] = useState(false);
-  const [pwHash, setPwHash] = useState(null);            // null = no password set yet
-  const [showSetPw, setShowSetPw] = useState(false);
-
   // Sync state
-  const [ghOpen, setGhOpen] = useState(false);
   const [syncStatus, setSyncStatus] = useState('disabled');
-  const [lastSync, setLastSync] = useState(() => {
-    const v = localStorage.getItem(K_GH_LAST_SYNC);
-    return v ? Number(v) : null;
-  });
+  const [lastSync, setLastSync] = useState(null);
+
+  // Modals
+  const [showChangePw, setShowChangePw] = useState(false);
+  const [showChangeToken, setShowChangeToken] = useState(false);
 
   const showToast = useCallback((message, type='info') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 2800);
   }, []);
 
-  const recordSync = () => {
-    const t = Date.now();
-    setLastSync(t);
-    localStorage.setItem(K_GH_LAST_SYNC, String(t));
-  };
+  const recordSync = () => setLastSync(Date.now());
 
-  // Build a single object representing all data
-  const buildSnapshot = useCallback(() => ({
-    version: 2,
-    config, flats, payments, expenses, staff,
-    auth: pwHash ? { passphrase_hash: pwHash } : null,
-    updated_at: nowISO(),
-    device: (navigator.userAgent.match(/\(([^)]+)\)/) || ['', 'unknown'])[1],
-  }), [config, flats, payments, expenses, staff, pwHash]);
-
-  const applySnapshot = useCallback((data) => {
+  // Apply decrypted vault contents to app state
+  const applyVaultData = useCallback((data) => {
+    if (!data) return;
     if (data.config) setConfig({ ...DEFAULT_CONFIG, ...data.config });
-    if (Array.isArray(data.flats) && data.flats.length) setFlats(data.flats);
-    if (Array.isArray(data.payments)) setPayments(data.payments.map(migratePayment));
+    if (Array.isArray(data.flats)) setFlats(data.flats);
+    if (Array.isArray(data.payments)) {
+      try { setPayments(data.payments.filter(x => x && typeof x === 'object').map(migratePayment)); }
+      catch (e) { console.error('Payment migration failed', e); setPayments([]); }
+    }
     if (Array.isArray(data.expenses)) setExpenses(data.expenses);
     if (Array.isArray(data.staff)) setStaff(data.staff);
-    if (data.auth?.passphrase_hash) setPwHash(data.auth.passphrase_hash);
   }, []);
 
-  const pullFromGitHub = useCallback(async () => {
-    if (!github.isConfigured()) return null;
-    setSyncStatus('syncing');
+  // Build snapshot of current state for saving
+  const buildSnapshot = useCallback(() => ({
+    config, flats, payments, expenses, staff,
+    updated_at: nowISO(),
+    version: 3,
+  }), [config, flats, payments, expenses, staff]);
+
+  // ---- Initial load: fetch vault file ----
+  const attemptLoad = useCallback(async () => {
+    setStage('loading');
+    setLoadError('');
     try {
-      const file = await github.getFile();
-      if (!file) { setSyncStatus('connected'); return null; }
-      const data = JSON.parse(file.text);
-      recordSync();
-      setSyncStatus('connected');
-      return data;
-    } catch (e) {
-      console.error('GitHub pull failed', e);
-      setSyncStatus('error');
-      showToast('Pull failed: ' + e.message, 'error');
-      return null;
-    }
-  }, [showToast]);
-
-  // ---- Initial load ----
-  useEffect(() => {
-    // Safety net: if init never reaches setLoading(false) for any reason, force-stop after 12 seconds
-    const safetyTimeout = setTimeout(() => {
-      setLoading(prev => {
-        if (prev) {
-          console.error('Safety timeout — forcing loading to false. Check console for errors.');
-          alert('The app took unusually long to load. Continuing anyway. If problems persist, click the GitHub sync badge to reconnect, or use Reset on the lock screen.');
-        }
-        return false;
-      });
-      setAuthReady(true);
-    }, 12000);
-
-    (async () => {
-      try {
-        // 1. Load local
-        const cfg = await storage.get(K_CONFIG, null);
-        const f = await storage.get(K_FLATS, null);
-        const p = await storage.get(K_PAYMENTS, []);
-        const ex = await storage.get(K_EXPENSES, []);
-        const st = await storage.get(K_STAFF, []);
-        let initFlats = (f && Array.isArray(f) && f.length > 0) ? f : null;
-        let initPayments = [];
-        try { initPayments = (Array.isArray(p) ? p : []).filter(x => x && typeof x === 'object').map(migratePayment); }
-        catch (e) { console.error('Payment migration failed', e); initPayments = []; }
-        let initExpenses = Array.isArray(ex) ? ex : [];
-        let initStaff = Array.isArray(st) ? st : [];
-        let initConfig = cfg ? { ...DEFAULT_CONFIG, ...cfg } : null;
-        let initHash = (cfg && cfg.passphrase_hash) || null;
-
-        // 2. If GitHub configured, pull (with 8s timeout so we never hang)
-        if (github.isConfigured()) {
-          setSyncStatus('connecting');
-          try {
-            const file = await Promise.race([
-              github.getFile(),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('GitHub took too long to respond — continuing with local data')), 8000)),
-            ]);
-            if (file) {
-              const data = JSON.parse(file.text);
-              if (data.config) initConfig = { ...DEFAULT_CONFIG, ...data.config };
-              if (Array.isArray(data.flats) && data.flats.length) initFlats = data.flats;
-              if (Array.isArray(data.payments)) {
-                try { initPayments = data.payments.filter(x => x && typeof x === 'object').map(migratePayment); }
-                catch (e) { console.error('Remote payment migration failed', e); }
-              }
-              if (Array.isArray(data.expenses)) initExpenses = data.expenses;
-              if (Array.isArray(data.staff)) initStaff = data.staff;
-              if (data.auth && data.auth.passphrase_hash) initHash = data.auth.passphrase_hash;
-              recordSync();
-              setSyncStatus('connected');
-            } else {
-              setSyncStatus('connected');
-            }
-          } catch (e) {
-            console.warn('GitHub silent pull failed', e);
-            setSyncStatus('offline');
-            // Don't toast on first load — it would block the UI behind a modal
-          }
-        }
-
-        if (initConfig) setConfig(initConfig);
-        setExpenses(initExpenses);
-        setStaff(initStaff);
-        if (initFlats) {
-          setFlats(initFlats); setPayments(initPayments); setInitialized(true);
-        }
-        setPwHash(initHash);
-        setUnlocked(!initHash || auth.hasValidSession());
-
-        // 3. If not configured and not dismissed, popup
-        if (!github.isConfigured() && !localStorage.getItem('sjm1:gh:setupDismissed')) {
-          setTimeout(() => setGhOpen(true), 500);
-        }
-      } catch (err) {
-        console.error('App init crashed', err);
-        alert('Startup error: ' + (err.message || err) + '\n\nThe app will continue in safe mode. Check the browser console for details.');
-      } finally {
-        // ALWAYS clear loading, no matter what failed
-        clearTimeout(safetyTimeout);
-        setAuthReady(true);
-        setLoading(false);
+      const repo = vault.getRepo();
+      if (!repo || !repo.owner || !repo.repo) {
+        // Can't auto-detect — go straight to first-time setup
+        setStage('first-time');
+        return;
       }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      const { data, isFirstTime, isLegacy } = await vault.load();
+      if (isFirstTime) {
+        setStage('first-time');
+      } else if (isLegacy) {
+        // Old plain JSON — needs migration
+        setLegacyData(data);
+        setStage('migrate');
+      } else {
+        // Encrypted vault — show lock screen
+        setVaultFile(data);
+        setStage('locked');
+      }
+    } catch (e) {
+      console.error('Vault load failed', e);
+      setLoadError(e.message || String(e));
+      setStage('load-error');
+    }
   }, []);
+
+  useEffect(() => {
+    // Safety net — never let loading hang forever
+    const safety = setTimeout(() => {
+      setStage(prev => prev === 'loading' ? 'load-error' : prev);
+      setLoadError(prev => prev || 'Loading took unusually long. Network may be slow or the data file is unreachable.');
+    }, 15000);
+    attemptLoad().finally(() => clearTimeout(safety));
+    return () => clearTimeout(safety);
+  }, [attemptLoad]);
 
   // ---- Auto-push to GitHub on data change (debounced) ----
   const pushTimer = useRef(null);
   const schedulePush = useCallback(() => {
-    if (!github.isConfigured()) return;
+    if (!vault.isUnlocked()) return;
     clearTimeout(pushTimer.current);
     pushTimer.current = setTimeout(async () => {
-      if (!github.isConfigured()) return;
+      if (!vault.isUnlocked()) return;
       try {
         setSyncStatus('syncing');
-        const snap = buildSnapshot();
-        await github.putFile(JSON.stringify(snap, null, 2));
+        await vault.save(buildSnapshot());
         recordSync();
         setSyncStatus('connected');
       } catch (e) {
-        console.error('GitHub push failed', e);
+        console.error('Save failed', e);
         setSyncStatus('error');
+        showToast('Save failed: ' + e.message, 'error');
       }
     }, 2500);
-  }, [buildSnapshot]);
+  }, [buildSnapshot, showToast]);
 
-  // persist local + push to GitHub on every change
-  useEffect(() => {
-    if (!initialized) return;
-    storage.set(K_FLATS, flats);
-    schedulePush();
-  }, [flats, initialized, schedulePush]);
-  useEffect(() => {
-    if (!initialized) return;
-    storage.set(K_PAYMENTS, payments);
-    schedulePush();
-  }, [payments, initialized, schedulePush]);
-  useEffect(() => {
-    if (!initialized) return;
-    storage.set(K_EXPENSES, expenses);
-    schedulePush();
-  }, [expenses, initialized, schedulePush]);
-  useEffect(() => {
-    if (!initialized) return;
-    storage.set(K_STAFF, staff);
-    schedulePush();
-  }, [staff, initialized, schedulePush]);
-  useEffect(() => {
-    if (!initialized) return;
-    // store the hash inside config too so local-only setups work
-    const cfgToSave = { ...config, passphrase_hash: pwHash };
-    storage.set(K_CONFIG, cfgToSave);
-    schedulePush();
-  }, [config, pwHash, initialized, schedulePush]);
+  // Trigger save on data changes (only when app is ready)
+  useEffect(() => { if (stage === 'ready') schedulePush(); }, [flats, stage, schedulePush]);
+  useEffect(() => { if (stage === 'ready') schedulePush(); }, [payments, stage, schedulePush]);
+  useEffect(() => { if (stage === 'ready') schedulePush(); }, [expenses, stage, schedulePush]);
+  useEffect(() => { if (stage === 'ready') schedulePush(); }, [staff, stage, schedulePush]);
+  useEffect(() => { if (stage === 'ready') schedulePush(); }, [config, stage, schedulePush]);
 
-  const initialize = async () => {
+  // ---- First-time setup completion ----
+  const handleFirstTimeComplete = useCallback((data) => {
+    applyVaultData(data);
+    setSyncStatus('connected');
+    recordSync();
+    setStage('ready');
+    showToast('Vault initialised on GitHub', 'success');
+  }, [applyVaultData, showToast]);
+
+  // ---- Migration: take legacy plain data, encrypt and re-upload ----
+  const handleMigrateComplete = useCallback((data) => {
+    // After migrate, the legacy fields are now inside the encrypted vault
+    applyVaultData({
+      config: legacyData?.config || DEFAULT_CONFIG,
+      flats: legacyData?.flats || [],
+      payments: legacyData?.payments || [],
+      expenses: legacyData?.expenses || [],
+      staff: legacyData?.staff || [],
+    });
+    setSyncStatus('connected');
+    recordSync();
+    setStage('ready');
+    showToast('Data migrated to encrypted vault', 'success');
+  }, [legacyData, applyVaultData, showToast]);
+
+  // ---- Lock screen unlock ----
+  const handleUnlock = useCallback((decryptedData) => {
+    applyVaultData(decryptedData);
+    setSyncStatus('connected');
+    recordSync();
+    setStage('ready');
+  }, [applyVaultData]);
+
+  // ---- Manual lock (logout) ----
+  const lockApp = useCallback(() => {
+    vault.lock();
+    auth.endSession();
+    setFlats([]); setPayments([]); setExpenses([]); setStaff([]); setConfig(DEFAULT_CONFIG);
+    setStage('locked');
+  }, []);
+
+  // ---- Initial society setup (generate flats) ----
+  const initializeSociety = async () => {
     const newFlats = generateFlats();
-    await storage.set(K_FLATS, newFlats);
-    await storage.set(K_CONFIG, config);
-    await storage.set(K_PAYMENTS, []);
-    setFlats(newFlats); setPayments([]); setInitialized(true);
+    setFlats(newFlats);
     showToast(`Society initialised with ${newFlats.length} units`, 'success');
-    // Prompt to set a passphrase after initial setup
-    if (!pwHash) setTimeout(() => setShowSetPw(true), 400);
   };
 
+  // ---- Mutators ----
   const addPayments = (list) => setPayments(prev => [...prev, ...list]);
   const deletePayment = (id) => setPayments(prev => prev.filter(p => p.id !== id));
   const addExpense = (e) => setExpenses(prev => [...prev, e]);
   const updateExpense = (id, patch) => setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...patch } : e));
   const deleteExpense = (id) => setExpenses(prev => prev.filter(e => e.id !== id));
-  const addStaff = (s) => setStaff(prev => [...prev, s]);
+  const addStaffMember = (s) => setStaff(prev => [...prev, s]);
   const updateStaff = (id, patch) => setStaff(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
   const deleteStaff = (id) => setStaff(prev => prev.filter(s => s.id !== id));
 
-  // After connect via setup modal
-  const onGitHubConnected = useCallback(async () => {
-    setSyncStatus('connecting');
+  const handleSyncBadgeClick = useCallback(async () => {
+    if (stage !== 'ready') return;
     try {
-      const file = await github.getFile();
-      const hasLocal = flats.length > 0 || expenses.length > 0 || staff.length > 0;
-      const hasRemote = !!file;
-      if (hasRemote && hasLocal) {
-        const wantPull = confirm(
-          'Both GitHub and local storage have data.\n\n' +
-          'OK → Pull from GitHub (replace local).\n' +
-          'Cancel → Push local to GitHub (overwrite remote).'
-        );
-        if (wantPull) {
-          const data = JSON.parse(file.text);
-          applySnapshot(data);
-          recordSync();
-          setSyncStatus('connected');
-          showToast('Pulled data from GitHub', 'success');
-        } else {
-          setSyncStatus('syncing');
-          await github.putFile(JSON.stringify(buildSnapshot(), null, 2), 'Initial upload from local storage');
-          recordSync();
-          setSyncStatus('connected');
-          showToast('Pushed local data to GitHub', 'success');
-        }
-      } else if (hasRemote) {
-        const data = JSON.parse(file.text);
-        applySnapshot(data);
-        if (data.flats && data.flats.length && !initialized) setInitialized(true);
+      setSyncStatus('syncing');
+      const text = await vault.fetchRaw();
+      if (text) {
+        const parsed = JSON.parse(text);
+        const inner = await vault.unlock(parsed, vault.passphrase);
+        applyVaultData(inner);
         recordSync();
         setSyncStatus('connected');
-        showToast('Loaded data from GitHub', 'success');
-      } else if (hasLocal) {
-        setSyncStatus('syncing');
-        await github.putFile(JSON.stringify(buildSnapshot(), null, 2), 'Initial upload from local storage');
-        recordSync();
-        setSyncStatus('connected');
-        showToast('Uploaded local data to GitHub', 'success');
-      } else {
-        setSyncStatus('connected');
-        showToast('Connected to GitHub', 'success');
+        showToast('Pulled latest from GitHub', 'success');
       }
     } catch (e) {
-      console.error(e);
       setSyncStatus('error');
-      showToast('Connection succeeded but sync failed: ' + e.message, 'error');
+      showToast('Refresh failed: ' + e.message, 'error');
     }
-  }, [flats, expenses, staff, initialized, applySnapshot, buildSnapshot, showToast]);
-
-  const handleSyncBadgeClick = useCallback(async () => {
-    if (!github.isConfigured()) { setGhOpen(true); return; }
-    const data = await pullFromGitHub();
-    if (data) { applySnapshot(data); showToast('Refreshed from GitHub', 'success'); }
-  }, [pullFromGitHub, applySnapshot, showToast]);
+  }, [stage, applyVaultData, showToast]);
 
   const defaulterCount = useMemo(() => {
     const occupied = flats.filter(f => f.occupancy !== 'Vacant');
     return occupied.filter(f => paidByFlatInPeriod(payments, f.flat_no, currentPeriod) < f.monthly_amount).length;
   }, [flats, payments, currentPeriod]);
 
-  // Show a manual escape button after 5 seconds of loading
-  const [showSkip, setShowSkip] = useState(false);
-  useEffect(() => {
-    if (!loading) return;
-    const t = setTimeout(() => setShowSkip(true), 5000);
-    return () => clearTimeout(t);
-  }, [loading]);
+  // ============== RENDER ==============
 
-  // ---- Render gating ----
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="text-center max-w-md">
-        <div className="font-display text-3xl text-teal-500 mb-2">Sushma Joynest Moh 1</div>
-        <div className="text-ink-soft text-sm mb-6">Loading the books…</div>
-        {showSkip && (
-          <div className="bg-ivory-warm ring-soft rounded-lg p-4 anim-fade">
-            <div className="text-xs text-ink-soft mb-3">Taking longer than usual. The app may be waiting on a slow network or stale data.</div>
-            <div className="flex gap-2 justify-center flex-wrap">
-              <Button size="sm" onClick={() => { setLoading(false); setAuthReady(true); }}>Continue anyway</Button>
-              <Button size="sm" variant="ghost" onClick={() => {
-                if (!confirm('Clear all local data and reload? GitHub data (if any) will be re-pulled.')) return;
-                ['sjm1:flats:v1','sjm1:payments:v1','sjm1:config:v1','sjm1:expenses:v1','sjm1:staff:v1','sjm1:gh:config:v1','sjm1:gh:sha:v1','sjm1:gh:lastSync','sjm1:auth:session'].forEach(k => localStorage.removeItem(k));
-                location.reload();
-              }}>Clear & reload</Button>
-            </div>
-          </div>
-        )}
+  // Stage: loading
+  if (stage === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="font-display text-3xl text-teal-500 mb-2">Sushma Joynest Moh 1</div>
+          <div className="text-ink-soft text-sm">Fetching encrypted vault from GitHub…</div>
+        </div>
       </div>
-    </div>;
+    );
   }
 
-  // Login gate — only show after authReady, only if a hash exists and session expired
-  if (authReady && pwHash && !unlocked) {
+  // Stage: load error
+  if (stage === 'load-error') {
     return (
-      <LoginGate
-        storedHash={pwHash}
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="bg-ivory-warm rounded-2xl ring-soft p-8 max-w-md text-center">
+          <div className="font-display text-2xl text-crimson-500 mb-2">Cannot load vault</div>
+          <p className="text-sm text-ink-soft mb-4">{loadError}</p>
+          <div className="bg-ivory-deep/40 rounded-lg p-3 text-[12px] text-ink-soft text-left mb-4">
+            <div className="font-semibold mb-1">Common causes:</div>
+            <ul className="list-disc pl-5 space-y-0.5">
+              <li>No internet connection</li>
+              <li>Hosted from an unrecognized URL (not <code>github.io</code>)</li>
+              <li>The repo is private (data file must be on a public repo to fetch)</li>
+            </ul>
+          </div>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={attemptLoad}><Icon name="refresh" /> Retry</Button>
+            <Button variant="ghost" onClick={() => setStage('first-time')}>Set up from scratch</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Stage: first-time setup
+  if (stage === 'first-time') {
+    return <VaultSetupModal open mode="first-time" onComplete={handleFirstTimeComplete} toast={showToast} />;
+  }
+
+  // Stage: migrate legacy plain data
+  if (stage === 'migrate') {
+    return (
+      <VaultSetupModal
+        open
+        mode="migrate"
+        existingData={{
+          config: legacyData?.config,
+          flats: legacyData?.flats || [],
+          payments: legacyData?.payments || [],
+          expenses: legacyData?.expenses || [],
+          staff: legacyData?.staff || [],
+        }}
+        onComplete={handleMigrateComplete}
+        toast={showToast}
+      />
+    );
+  }
+
+  // Stage: locked
+  if (stage === 'locked') {
+    return (
+      <VaultLockScreen
         society={config.society_name}
-        onUnlock={() => setUnlocked(true)}
+        vaultFile={vaultFile}
+        onUnlock={handleUnlock}
+        onRefetch={attemptLoad}
         onReset={() => {
-          if (!confirm('This will erase all local data on this device. GitHub data (if any) will remain. Continue?')) return;
-          [K_FLATS, K_PAYMENTS, K_CONFIG, K_EXPENSES, K_STAFF, K_GH_CONFIG, K_GH_SHA, K_GH_LAST_SYNC, K_AUTH_SESSION].forEach(k => localStorage.removeItem(k));
+          if (!confirm('This will NOT erase data on GitHub — only this device\'s session. You will still need the passphrase to unlock the vault. Continue?')) return;
+          auth.endSession();
           location.reload();
         }}
       />
     );
   }
 
-  if (!initialized) return (
-    <>
-      <Onboarding onInitialize={initialize} />
-      <GitHubSetupModal open={ghOpen} onClose={() => setGhOpen(false)} onConnected={onGitHubConnected} toast={showToast} hasLocalData={flats.length > 0} />
-    </>
-  );
+  // Stage: ready — main app
+  // If no flats yet, show onboarding (rare case: vault was initialized empty)
+  if (flats.length === 0) {
+    return <Onboarding onInitialize={initializeSociety} />;
+  }
 
   return (
     <div className="min-h-screen flex grain">
@@ -3823,8 +4079,8 @@ function App() {
         defaulterCount={defaulterCount} currentPeriod={currentPeriod}
         driveStatus={syncStatus} driveLastSync={lastSync}
         onDriveBadgeClick={handleSyncBadgeClick}
-        onLogout={() => { auth.endSession(); setUnlocked(false); }}
-        hasPw={!!pwHash}
+        onLogout={lockApp}
+        hasPw={true}
       />
       <main className="flex-1 px-6 py-8 max-w-[1400px]">
         {view === 'dashboard' && <Dashboard flats={flats} payments={payments} expenses={expenses} currentPeriod={currentPeriod} setView={setView} setCurrentPeriod={setCurrentPeriod} />}
@@ -3833,7 +4089,7 @@ function App() {
         {view === 'history' && <PaymentHistory payments={payments} flats={flats} deletePayment={deletePayment} toast={showToast} />}
         {view === 'defaulters' && <Defaulters flats={flats} payments={payments} currentPeriod={currentPeriod} config={config} toast={showToast} />}
         {view === 'expenses' && <ExpensesView expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} staff={staff} currentPeriod={currentPeriod} toast={showToast} />}
-        {view === 'staff' && <StaffView staff={staff} addStaff={addStaff} updateStaff={updateStaff} deleteStaff={deleteStaff} expenses={expenses} addExpense={addExpense} currentPeriod={currentPeriod} toast={showToast} />}
+        {view === 'staff' && <StaffView staff={staff} addStaff={addStaffMember} updateStaff={updateStaff} deleteStaff={deleteStaff} expenses={expenses} addExpense={addExpense} currentPeriod={currentPeriod} toast={showToast} />}
         {view === 'reports' && <Reports flats={flats} payments={payments} expenses={expenses} currentPeriod={currentPeriod} config={config} />}
         {view === 'settings' && (
           <Settings
@@ -3844,16 +4100,12 @@ function App() {
             staff={staff} setStaff={setStaff}
             toast={showToast}
             syncStatus={syncStatus} lastSync={lastSync}
-            onOpenSync={() => setGhOpen(true)}
-            onForgetSync={() => { github.forget(); setSyncStatus('disabled'); setLastSync(null); showToast('GitHub credentials cleared', 'info'); }}
-            onPullSync={async () => {
-              const data = await pullFromGitHub();
-              if (data) { applySnapshot(data); showToast('Pulled data from GitHub', 'success'); }
-            }}
-            onPushSync={async () => {
+            onChangePassphrase={() => setShowChangePw(true)}
+            onChangeToken={() => setShowChangeToken(true)}
+            onForceSync={async () => {
               try {
                 setSyncStatus('syncing');
-                await github.putFile(JSON.stringify(buildSnapshot(), null, 2), 'Manual push from Settings');
+                await vault.save(buildSnapshot(), 'Manual push from Settings');
                 recordSync();
                 setSyncStatus('connected');
                 showToast('Pushed all data to GitHub', 'success');
@@ -3862,19 +4114,12 @@ function App() {
                 showToast('Push failed: ' + e.message, 'error');
               }
             }}
-            pwHash={pwHash}
-            onSetPassword={() => setShowSetPw(true)}
-            onRemovePassword={() => { if (confirm('Remove the passphrase protection?')) { setPwHash(null); auth.endSession(); showToast('Passphrase removed', 'info'); } }}
           />
         )}
       </main>
       <Toast toast={toast} />
-      <GitHubSetupModal open={ghOpen} onClose={() => setGhOpen(false)} onConnected={onGitHubConnected} toast={showToast} hasLocalData={flats.length > 0} />
-      <SetPasswordModal
-        open={showSetPw}
-        onSet={(h) => { setPwHash(h); setShowSetPw(false); auth.startSession(); showToast('Passphrase set — keep it safe!', 'success'); }}
-        onSkip={() => setShowSetPw(false)}
-      />
+      <ChangePassphraseModal open={showChangePw} onClose={() => setShowChangePw(false)} onChanged={() => {}} toast={showToast} snapshotFn={buildSnapshot} />
+      <ChangeTokenModal open={showChangeToken} onClose={() => setShowChangeToken(false)} onChanged={() => {}} toast={showToast} snapshotFn={buildSnapshot} />
     </div>
   );
 }
